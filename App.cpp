@@ -1,0 +1,139 @@
+#include "App.h"
+#include <iostream>
+#include "Schema.h"
+#include <string>
+#include "Tokenizer.h"
+
+void App::run() {
+
+	while (App::isRunning) {
+
+		std::string testQuerys[6] = {
+			"CREATE TABLE users id name age",
+			"INSERT users id = 1 name = 'kim' age = 25",
+			"INSERT users id = 2 name = 'lee' age = 30",
+			"SELECT users",
+			"SELECT users age > 20",
+			"DELETE users name = 'kim'"
+		};
+
+		std::string query;
+		// "" :문자열, '' 문자
+
+
+		for (std::string testQuery : testQuerys) {
+			query = testQuery;
+
+			Tokenizer tokenizer;
+
+			std::vector < QueryToken > tokens = tokenizer.tokenize(query);
+
+			for (QueryToken token : tokens) {
+				std::string type = tokenizer.typeToString(token.type);
+				std::cout << '['<< type << ',' << token.value << ']';
+			}
+			std::cout<< std::endl;
+			
+		}
+		
+		App::isRunning = false; // 테스트 후 종료
+	
+	}
+
+}
+
+
+void App::runTest() {
+
+	std::cout << "testing..." << std::endl;
+
+	Schema myDb("TestDB", 2); // 스키마 객체 사용
+
+	// 테이블 생성 및 추가
+	myDb.addTable(new Table("user", 2));
+	myDb.addTable(new Table("department", 2));
+
+
+	myDb.printSchema();// 스키마 정보 출력
+
+	while (App::isRunning) {
+
+		std::cout << std::endl;
+		//명령어 출력
+		std::string command;
+		std::cout << "main command: " << std::endl;
+		std::cin >> command;
+
+
+
+		if(command == "exit"){
+			App::isRunning = false; // 테스트 후 종료
+		}
+		else if (command == "create") {
+			
+			std::string name;
+			std::cout << "table name: " << std::endl;
+			std::cin >> name;
+			myDb.addTable(new Table(name, 5));
+		}else if(command == "print_schema"){
+			myDb.printSchema();// 스키마 정보 출력	
+
+		}else if (command == "find_table"){
+			std::string name;
+			std::cout << "table name: " << std::endl;
+			std::cin >> name;
+			
+			Table* table = myDb.findTable(name); // 테이블 검색
+
+			if (table != nullptr) {
+				
+				bool isTableMenu = true;
+				while (isTableMenu) {
+					
+					std::cout << "current table : " << table->getName() << std::endl;
+					std::cout << "-------------------------------------" << std::endl;
+					
+					std::string command2;
+					std::cout << "table command: " << std::endl;
+					std::cin >> command2;
+					
+					if (command2 == "exit") {
+						isTableMenu = false;
+					}
+					else if (command2 == "info") {
+						table->printTable();
+					}
+					else if (command2 == "insert") {
+						
+						Value* newValues = new Value[5];
+						for (int i = 0; i < 5; i++) {
+							newValues[i] = i;
+						
+						}
+
+						table->addRow(newValues);
+						
+						table->printTable();
+					}
+					
+					;
+
+
+
+				
+				}
+							
+			}
+			else if (table == nullptr) {
+				std::cout << "not found" << std::endl;
+			}
+
+
+		}
+
+	
+		
+
+	}
+
+}

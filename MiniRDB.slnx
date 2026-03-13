@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="MiniRDB.vcxproj" Id="82351890-d63d-49de-b018-306873070c7c" />
+</Solution>
