@@ -9,12 +9,13 @@ void App::run() {
 	while (App::isRunning) {
 
 		std::string testQuerys[6] = {
-			"CREATE TABLE users id name age",
-			"INSERT users id = 1 name = 'kim' age = 25",
-			"INSERT users id = 2 name = 'lee' age = 30",
-			"SELECT users",
-			"SELECT users age > 20",
-			"DELETE users name = 'kim'"
+			//"SELECT * FROM users;",
+			//"SELECT name, id FROM users;",
+			//"SELECT name, id FROM users WHERE name = 'glory';"
+			"SELECT name, id FROM users WHERE name >= 'glory';",
+			//"CREATE TABLE users (id INT, name TEXT);",
+			//"INSERT INTO users VALUES (1, 'kim');",
+			
 		};
 
 		std::string query;

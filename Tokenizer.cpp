@@ -33,6 +33,8 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 		char c = query[i];
 		
 		if (isspace(c)) continue; //공백인 경우 
+		
+
 
 		if (c == '\'') { //시작 따옴표 ' 감지 
 			std::string literal;
@@ -51,7 +53,7 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 				// '가 안닫혔을 때 로직 필요
 			}
 
-			tokens.push_back({ TokenType::LITERAL, literal });
+			tokens.push_back({ TokenType::STRING, literal });
 
 
 		}
@@ -65,11 +67,17 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 			}
 			i--;
 			
-			std::string arr[] = { "SELECT", "CREATE", "INSERT","TABLE", "DELETE","FROM", "WHERE"};
-			// TODO 대소문자 처리 필요
 
-			if (std::find(arr,arr+5 ,word) != arr+5) {
-				tokens.push_back({ TokenType::KEYWORD, word });
+			std::string upperWord = word;
+			for (char& ch : upperWord) { //대문자 변환
+				ch = std::toupper(static_cast<unsigned char>(ch));
+			}
+
+			auto it = keywords.find(upperWord);
+			// unordered
+
+			if (it != keywords.end()) { //.end() 못찾았다를 의미하는 기준값.
+				tokens.push_back({ it->second , word });
 			}
 			else {
 				tokens.push_back({ TokenType::IDENTIFIER, word });
@@ -84,14 +92,63 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 				i++;
 			}
 			i--;
-			tokens.push_back({ TokenType::LITERAL, num });
+			tokens.push_back({ TokenType::NUMBER, num });
 		
 		}
-		else if (isOperator(c)) { // 연산자인 경우
-			tokens.push_back({ TokenType::OPERATOR, std::string(1,c)});
+		else if (isOperator(c) || isSymbol(c)) { // 연산자, 기호인 경우
+
+			switch (c) {
+			case ',':
+				tokens.push_back({ TokenType::COMMA, std::string(1,c) });
+				break;
+			case ';':
+				tokens.push_back({ TokenType::SEMICOLON, std::string(1,c) });
+				break;
+			case '(':
+				tokens.push_back({ TokenType::LPAREN, std::string(1,c) });
+				break;
+			case ')':
+				tokens.push_back({ TokenType::RPAREN, std::string(1,c) });
+				break;
+			case '=':
+				tokens.push_back({ TokenType::EQUAL, std::string(1,c) });
+				break;
+			case '+':
+				tokens.push_back({ TokenType::PLUS, std::string(1,c) });
+				break;
+			case '-':
+				tokens.push_back({ TokenType::MINUS, std::string(1,c) });
+				break;
+			case '*':
+				tokens.push_back({ TokenType::ASTERISK, std::string(1,c) });
+				break;
+			case '/':
+				tokens.push_back({ TokenType::SLASH, std::string(1,c) });
+				break;
+			case '<':
+				tokens.push_back({ TokenType::LT, std::string(1,c) });
+				break;
+			case '>':
+				tokens.push_back({ TokenType::GT, std::string(1,c) });
+				break;
+			case '!':
+				tokens.push_back({ TokenType::BANG, std::string(1,c) });
+				break;
+
+
+			}
+
 		}
+		else {
+			tokens.push_back({TokenType::UNKNOWN, std::string(1,c)});
+		}
+		
 	
 	}
+
+	// 쿼리 끝
+	tokens.push_back({ TokenType::END_OF_FILE, "" });
+	
 
 	return tokens;
 }

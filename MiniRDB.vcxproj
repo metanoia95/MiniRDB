@@ -129,6 +129,7 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="parser.cpp" />
     <ClCompile Include="Tokenizer.cpp" />
     <ClCompile Include="Tokenizer.h" />
     <ClCompile Include="Schema.cpp" />
@@ -136,10 +137,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
-    <ClInclude Include="QueryParser.h" />
+    <ClInclude Include="Ast.h" />
+    <ClInclude Include="parser.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Schema.h" />
     <ClInclude Include="Table.h" />
     <ClInclude Include="types.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MiniRDB.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
