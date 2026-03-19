@@ -1,4 +1,4 @@
-#include "Tokenizer.h"
+﻿#include "Tokenizer.h"
 #include <cctype>
 #include <algorithm>
 
@@ -6,12 +6,14 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 
 	//예시 쿼리
 	/*
-		CREATE TABLE users id name age
-		INSERT users id=1 name=kim age=25
-		INSERT users id=2 name=lee age=30
-		SELECT * FROM users
-		SELECT * FROM users WHERE age>20
-		DELETE users name=kim
+
+			"SELECT * FROM users;",
+			"SELECT name, id FROM users;",
+			"SELECT name, id FROM users WHERE name = 'glory';"
+			"SELECT name, id FROM users WHERE name >= 'glory';",
+			"CREATE TABLE users (id INT, name TEXT);",
+			"INSERT INTO users VALUES (1, 'kim');",
+			"INSERT INTO users VALUES (1, 'It''s a nice day');",
 	*/
 
 	/* cctype 함수
@@ -41,20 +43,28 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 			i++; //시작 따옴표 다음칸으로 이동
 			while (i < query.size()) {
 				if (query[i] == '\'') {
-					break;
+					// 그 다음 글자도 따옴표인지 확인. 표준 SQL에서는 문자열 중간의 '는 ''로 치환되서 보내짐
+					// ex It's a nice day -> 'It''s a nice day'
+					if (i + 1 < query.size() && query[i + 1] == '\'') {
+						
+						literal += query[i];
+						i += 2;
+						continue;
+					}
+					else {
+						i++;
+						break;
+					}					
 				}
+
 				literal += query[i];
 				i++;
 			}
-
 			
-			if (i == query.size()) {
-				// TODO
-				// '가 안닫혔을 때 로직 필요
-			}
+			// TODO
+			// '가 안닫혔을 때 로직 필요
 
 			tokens.push_back({ TokenType::STRING, literal });
-
 
 		}
 		else if (isalpha(c)){ //알파벳인 경우
@@ -126,16 +136,29 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 				tokens.push_back({ TokenType::SLASH, std::string(1,c) });
 				break;
 			case '<':
+				if (i+1 <query.size() && query[i + 1] == '=') {
+					tokens.push_back({ TokenType::LTE, std::string("<=") });
+					i++;
+					break;
+				}
 				tokens.push_back({ TokenType::LT, std::string(1,c) });
 				break;
 			case '>':
+				if (i + 1 < query.size() && query[i + 1] == '=') {
+					tokens.push_back({ TokenType::GTE, std::string(">=") });
+					i++;
+					break;
+				}
 				tokens.push_back({ TokenType::GT, std::string(1,c) });
 				break;
 			case '!':
+				if (i + 1 < query.size() && query[i + 1] == '=') {
+					tokens.push_back({ TokenType::GTE, std::string("!=") });
+					i++;
+					break;
+				}
 				tokens.push_back({ TokenType::BANG, std::string(1,c) });
 				break;
-
-
 			}
 
 		}

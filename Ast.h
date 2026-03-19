@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <string>
 #include "types.h"
@@ -61,7 +61,7 @@ public :
 
 	// 생성자
 	BinaryExpression(std::string op_, ExprPtr lhs, ExprPtr rhs) :
-		op(std::move(op_)), left(std::move(left)), right(std::move(right)) {}
+		op(std::move(op_)), left(std::move(lhs)), right(std::move(rhs)) {}
 	// ExprPtr 객체가 유니크포인터를 사용하므로 move를 사용해야만 소유권이 이전됨.
 
 };
@@ -121,7 +121,8 @@ class InsertStatement : public Statement {
 	
 public :
 	std::string table;
-	std::vector <std::string> values;
+	std::vector <std::string> values; 
+	//TODO 나중에 숫자 넣을 수 있게 variant 객체?
 };
 
 

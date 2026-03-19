@@ -1,4 +1,4 @@
-#include "App.h"
+﻿#include "App.h"
 #include <iostream>
 #include "Schema.h"
 #include <string>
@@ -13,8 +13,9 @@ void App::run() {
 			//"SELECT name, id FROM users;",
 			//"SELECT name, id FROM users WHERE name = 'glory';"
 			"SELECT name, id FROM users WHERE name >= 'glory';",
-			//"CREATE TABLE users (id INT, name TEXT);",
+			"CREATE TABLE users (id INT, name TEXT);",
 			//"INSERT INTO users VALUES (1, 'kim');",
+			"INSERT INTO users VALUES (1, 'It''s a nice day');",
 			
 		};
 
@@ -22,6 +23,7 @@ void App::run() {
 		// "" :문자열, '' 문자
 
 
+		// 토크나이저 검증 코드
 		for (std::string testQuery : testQuerys) {
 			query = testQuery;
 

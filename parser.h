@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <memory> // 유니크포인터
 #include "Tokenizer.h"
@@ -30,7 +30,7 @@ private :
 		return true;
 	}
 
-	// 2.4 현재 토큰이 특정 토큰임을 기대하고, 없으면 에러 발생. 다음 전진
+	// 2.4 현재 토큰이 특정 토큰 타입임을 기대하고, 없으면 에러 발생. 다음 전진. 토큰 객체 리턴
 	const QueryToken& consume(TokenType type, std::string message) {
 		if (check(type)) return tokens[current++]; // 다음 토큰 넘어감.
 		throw std::runtime_error(message);
@@ -54,6 +54,12 @@ private :
 		return false;
 	}
 
+	// 2.8 다음 토큰 조회
+	const QueryToken& peekNext() {
+		if (!isAtEnd()) return tokens[current + 1];
+		return tokens[current];
+	}
+
 public :
 
 	//1. 생성자
@@ -64,6 +70,14 @@ public :
 
 	std::unique_ptr<Statement> selectStatement();
 
+	std::unique_ptr<Statement> createStatement();
+
+	std::unique_ptr<Statement> insertStatement();
+
 	ExprPtr parseExpression();
+
+	ExprPtr parsePrimary();
+
+	
 
 };
