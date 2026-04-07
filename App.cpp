@@ -1,20 +1,23 @@
 ﻿#include "App.h"
 #include <iostream>
-#include "Schema.h"
 #include <string>
+#include <vector>
+#include "Schema.h"
 #include "Tokenizer.h"
+#include "parser.h"
+#include "AstVisitor.h"
 
 void App::run() {
 
 	while (App::isRunning) {
 
-		std::string testQuerys[6] = {
-			//"SELECT * FROM users;",
-			//"SELECT name, id FROM users;",
-			//"SELECT name, id FROM users WHERE name = 'glory';"
+		std::vector<std::string> testQuerys = {
+			"SELECT * FROM users;",
+			"SELECT name, id FROM users;",
+			"SELECT name, id FROM users WHERE name = 'glory';"
 			"SELECT name, id FROM users WHERE name >= 'glory';",
 			"CREATE TABLE users (id INT, name TEXT);",
-			//"INSERT INTO users VALUES (1, 'kim');",
+			"INSERT INTO users VALUES (1, 'kim');",
 			"INSERT INTO users VALUES (1, 'It''s a nice day');",
 			
 		};
@@ -23,10 +26,11 @@ void App::run() {
 		// "" :문자열, '' 문자
 
 
-		// 토크나이저 검증 코드
+		
 		for (std::string testQuery : testQuerys) {
 			query = testQuery;
 
+			// 토크나이저 검증 코드
 			Tokenizer tokenizer;
 
 			std::vector < QueryToken > tokens = tokenizer.tokenize(query);
@@ -36,8 +40,21 @@ void App::run() {
 				std::cout << '['<< type << ',' << token.value << ']';
 			}
 			std::cout<< std::endl;
+
+			// 파서
+			Parser parser(tokens);
+
+			auto stmt = parser.parse();
+
+			// 방문자 객체
+			AstPrinter printer;
+
+			// 이중 디스패치
+			stmt->accept(printer);
+			std::cout << std::endl;
 			
 		}
+
 		
 		App::isRunning = false; // 테스트 후 종료
 	

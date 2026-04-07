@@ -1,13 +1,13 @@
 ﻿#include "parser.h"
 #include <stdexcept> // 예외처리 객체
-
+#include <iostream>
 std::unique_ptr<Statement> Parser::parse() {
 
 	// 재귀하강 파서.
 	// parse 함수에서 statement 호출.
 	if (match(TokenType::SELECT)) return selectStatement();
 	else if (match(TokenType::CREATE)) return createStatement();
-	else if (match(TokenType::INSERT)) return createStatement();
+	else if (match(TokenType::INSERT)) return insertStatement();
 	
 	throw std::runtime_error("지원되지 않는 명령문");
 
@@ -15,7 +15,8 @@ std::unique_ptr<Statement> Parser::parse() {
 
 // 1. SELECT문 파서
 std::unique_ptr<Statement> Parser::selectStatement() {
-	
+	std::cout << "SELECT 문 파싱" <<std::endl;
+
 	// 0. 객체 선언
 	auto stmt = std::make_unique<SelectStatement>();
 
@@ -66,6 +67,7 @@ std::unique_ptr<Statement> Parser::selectStatement() {
 
 // 2. Create문 파서
 std::unique_ptr<Statement> Parser::createStatement() {
+	std::cout << "CREATE 문 파싱" << std::endl;
 
 	// 0. 객체 선언
 	auto stmt = std::make_unique<CreateStatement>();
@@ -106,7 +108,7 @@ std::unique_ptr<Statement> Parser::createStatement() {
 
 // 3. Insert문 파서
 std::unique_ptr<Statement> Parser::insertStatement() {
-	
+	std::cout << "INSERT 문 파싱" << std::endl;
 	// 지원 구문 예시
 	//"INSERT INTO users VALUES (1, 'kim');",
 
@@ -133,7 +135,7 @@ std::unique_ptr<Statement> Parser::insertStatement() {
 	
 	} while (match(TokenType::COMMA));
 
-	consume(TokenType::RPAREN, "( 필요");
+	consume(TokenType::RPAREN, ") 필요");
 
 
 	return stmt;
@@ -205,6 +207,7 @@ ExprPtr Parser::parseExpression(){
 		
 	return exp;
 }
+
 
 ExprPtr Parser::parsePrimary() {
 

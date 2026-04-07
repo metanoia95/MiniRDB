@@ -36,6 +36,12 @@
     <ClCompile Include="parser.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Ast.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="StorageManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -53,10 +59,16 @@
     <ClInclude Include="parser.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Ast.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="AstVisitor.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Ast.h">
+    <ClInclude Include="StorageManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

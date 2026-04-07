@@ -6,9 +6,32 @@
 #include <stdexcept> // 예외처리 객체
 
 class Parser {
+public:
+
+	//1. 생성자
+	Parser(const std::vector<QueryToken>& tokens) : tokens(tokens) {}
+
+	//2. 파싱 함수
+	std::unique_ptr<Statement> parse();
+
+
+
 
 private :
 
+	std::unique_ptr<Statement> selectStatement();
+
+	std::unique_ptr<Statement> createStatement();
+
+	std::unique_ptr<Statement> insertStatement();
+
+	ExprPtr parseExpression();
+
+	ExprPtr parsePrimary();
+
+
+
+	// 헬퍼 함수 ===============================================================
 	//1. 멤버변수
 	const std::vector<QueryToken>& tokens;
 
@@ -25,7 +48,7 @@ private :
 
 	// 2.3 현재 토큰이 특정타입인지 확인하고 맞으면 다음으로 전진
 	bool match(TokenType type) {
-		if ( isAtEnd() || check(type)) return false; 
+		if ( isAtEnd() || !check(type)) return false; 
 		current++;
 		return true;
 	}
@@ -59,24 +82,6 @@ private :
 		if (!isAtEnd()) return tokens[current + 1];
 		return tokens[current];
 	}
-
-public :
-
-	//1. 생성자
-	Parser(const std::vector<QueryToken>& tokens) : tokens(tokens) {}
-	
-	//2. 파싱 함수
-	std::unique_ptr<Statement> parse();
-
-	std::unique_ptr<Statement> selectStatement();
-
-	std::unique_ptr<Statement> createStatement();
-
-	std::unique_ptr<Statement> insertStatement();
-
-	ExprPtr parseExpression();
-
-	ExprPtr parsePrimary();
 
 	
 

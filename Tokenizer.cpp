@@ -7,7 +7,7 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 	//예시 쿼리
 	/*
 
-			"SELECT * FROM users;",
+			"SELECT * FROM users;",7
 			"SELECT name, id FROM users;",
 			"SELECT name, id FROM users WHERE name = 'glory';"
 			"SELECT name, id FROM users WHERE name >= 'glory';",
@@ -35,8 +35,6 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 		char c = query[i];
 		
 		if (isspace(c)) continue; //공백인 경우 
-		
-
 
 		if (c == '\'') { //시작 따옴표 ' 감지 
 			std::string literal;
@@ -60,7 +58,7 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 				literal += query[i];
 				i++;
 			}
-			
+			i--;
 			// TODO
 			// '가 안닫혔을 때 로직 필요
 

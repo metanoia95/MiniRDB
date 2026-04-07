@@ -8,6 +8,15 @@ enum class DataType {
 	TEXT
 };
 
+//toString함수
+inline std::string dataTypeToString(DataType type) {
+	switch (type) {
+	case DataType::INT:  return "INT";
+	case DataType::TEXT: return "TEXT";
+	default:             return "UNKNOWN";
+	}
+}
+
 // 컬럼
 struct column {
 
