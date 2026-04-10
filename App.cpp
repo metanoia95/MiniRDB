@@ -13,13 +13,12 @@ void App::run() {
 
 		std::vector<std::string> testQuerys = {
 			"SELECT * FROM users;",
+			//"CREATE TABLE users (id INT, name TEXT);",
+			"INSERT INTO users VALUES (144, 'kimsuki');",
+			"INSERT INTO users VALUES (1667, 'It''s a good day to die');",
 			"SELECT name, id FROM users;",
 			"SELECT name, id FROM users WHERE name = 'glory';"
 			"SELECT name, id FROM users WHERE name >= 'glory';",
-			"CREATE TABLE users (id INT, name TEXT);",
-			"INSERT INTO users VALUES (1, 'kim');",
-			"INSERT INTO users VALUES (1, 'It''s a nice day');",
-			
 		};
 
 		std::string query;
@@ -44,6 +43,7 @@ void App::run() {
 			// 파서
 			Parser parser(tokens);
 
+			// 상태 객체.
 			auto stmt = parser.parse();
 
 			// 방문자 객체
@@ -52,6 +52,11 @@ void App::run() {
 			// 이중 디스패치
 			stmt->accept(printer);
 			std::cout << std::endl;
+
+
+			// 실행 방문자
+			AstExecutor executor;
+			stmt->accept(executor);
 			
 		}
 
@@ -70,8 +75,6 @@ void App::runTest() {
 	Schema myDb("TestDB", 2); // 스키마 객체 사용
 
 	// 테이블 생성 및 추가
-	myDb.addTable(new Table("user", 2));
-	myDb.addTable(new Table("department", 2));
 
 
 	myDb.printSchema();// 스키마 정보 출력
@@ -94,7 +97,6 @@ void App::runTest() {
 			std::string name;
 			std::cout << "table name: " << std::endl;
 			std::cin >> name;
-			myDb.addTable(new Table(name, 5));
 		}else if(command == "print_schema"){
 			myDb.printSchema();// 스키마 정보 출력	
 
@@ -130,8 +132,6 @@ void App::runTest() {
 							newValues[i] = i;
 						
 						}
-
-						table->addRow(newValues);
 						
 						table->printTable();
 					}

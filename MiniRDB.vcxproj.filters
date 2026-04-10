@@ -71,6 +71,12 @@
     <ClInclude Include="StorageManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="FileIoStrategy.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ResultSet.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MiniRDB.rc">

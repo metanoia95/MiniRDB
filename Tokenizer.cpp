@@ -100,46 +100,48 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 				i++;
 			}
 			i--;
+
 			tokens.push_back({ TokenType::NUMBER, num });
 		
 		}
 		else if (isOperator(c) || isSymbol(c)) { // 연산자, 기호인 경우
 
+			std::string val = std::string(1, c);
 			switch (c) {
 			case ',':
-				tokens.push_back({ TokenType::COMMA, std::string(1,c) });
+				tokens.push_back({ TokenType::COMMA, val });
 				break;
 			case ';':
-				tokens.push_back({ TokenType::SEMICOLON, std::string(1,c) });
+				tokens.push_back({ TokenType::SEMICOLON, val});
 				break;
 			case '(':
-				tokens.push_back({ TokenType::LPAREN, std::string(1,c) });
+				tokens.push_back({ TokenType::LPAREN, val });
 				break;
 			case ')':
-				tokens.push_back({ TokenType::RPAREN, std::string(1,c) });
+				tokens.push_back({ TokenType::RPAREN, val });
 				break;
 			case '=':
-				tokens.push_back({ TokenType::EQUAL, std::string(1,c) });
+				tokens.push_back({ TokenType::EQUAL, val });
 				break;
 			case '+':
-				tokens.push_back({ TokenType::PLUS, std::string(1,c) });
+				tokens.push_back({ TokenType::PLUS,val });
 				break;
 			case '-':
-				tokens.push_back({ TokenType::MINUS, std::string(1,c) });
+				tokens.push_back({ TokenType::MINUS, val });
 				break;
 			case '*':
-				tokens.push_back({ TokenType::ASTERISK, std::string(1,c) });
+				tokens.push_back({ TokenType::ASTERISK, val });
 				break;
 			case '/':
-				tokens.push_back({ TokenType::SLASH, std::string(1,c) });
+				tokens.push_back({ TokenType::SLASH, val });
 				break;
 			case '<':
 				if (i+1 <query.size() && query[i + 1] == '=') {
-					tokens.push_back({ TokenType::LTE, std::string("<=") });
+					tokens.push_back({ TokenType::LTE, std::string("<=")});
 					i++;
 					break;
 				}
-				tokens.push_back({ TokenType::LT, std::string(1,c) });
+				tokens.push_back({ TokenType::LT, val });
 				break;
 			case '>':
 				if (i + 1 < query.size() && query[i + 1] == '=') {
@@ -147,11 +149,11 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 					i++;
 					break;
 				}
-				tokens.push_back({ TokenType::GT, std::string(1,c) });
+				tokens.push_back({ TokenType::GT, val});
 				break;
 			case '!':
 				if (i + 1 < query.size() && query[i + 1] == '=') {
-					tokens.push_back({ TokenType::GTE, std::string("!=") });
+					tokens.push_back({ TokenType::NEQ, std::string("!=") });
 					i++;
 					break;
 				}
@@ -161,7 +163,7 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 
 		}
 		else {
-			tokens.push_back({TokenType::UNKNOWN, std::string(1,c)});
+			tokens.push_back({TokenType::UNKNOWN, std::string(1,c) });
 		}
 		
 	

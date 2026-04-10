@@ -141,8 +141,10 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="Ast.h" />
     <ClInclude Include="AstVisitor.h" />
+    <ClInclude Include="FileIoStrategy.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="ResultSet.h" />
     <ClInclude Include="Schema.h" />
     <ClInclude Include="StorageManager.h" />
     <ClInclude Include="Table.h" />

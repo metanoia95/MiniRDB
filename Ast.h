@@ -64,11 +64,11 @@ class LiteralExpression : public Expression {
 	
 public: 
 	DataType type;
-	std::string value; 
+	Value value; 
 	//일단 스트링으로 저장
 
 	// 1. 생성자
-	LiteralExpression(DataType t, const std::string& v) :type(t), value(v) {}
+	LiteralExpression(DataType t, const Value& v) :type(t), value(v) {}
 
 	// 2. 방문자 
 	void accept(AstVisitor& v) override;
@@ -79,7 +79,7 @@ class BinaryExpression : public Expression {
 
 public :
 	// 연산자
-	std::string op;
+	BinaryOp op;
 
 	// 좌항
 	ExprPtr left; 
@@ -88,7 +88,7 @@ public :
 	ExprPtr right;
 
 	// 생성자
-	BinaryExpression(std::string op_, ExprPtr lhs, ExprPtr rhs) :
+	BinaryExpression(BinaryOp op_, ExprPtr lhs, ExprPtr rhs) :
 		op(std::move(op_)), left(std::move(lhs)), right(std::move(rhs)) {}
 	// ExprPtr 객체가 유니크포인터를 사용하므로 move를 사용해야만 소유권이 이전됨.
 
@@ -141,18 +141,11 @@ public:
 
 
 // CRETAE
-struct ColumnDef {
-
-	std::string name;
-	DataType type;
-
-};
-
 class CreateStatement : public Statement {
 
 public :
 	std::string table;
-	std::vector <ColumnDef> columns;
+	std::vector <Column> columns;
 
 	// 2. 방문자 
 	void accept(AstVisitor& v) override;
@@ -165,7 +158,7 @@ class InsertStatement : public Statement {
 	
 public :
 	std::string table;
-	std::vector <std::string> values; 
+	std::vector <Value> values; 
 	//TODO 나중에 숫자 넣을 수 있게 variant 객체?
 
 	// 2. 방문자 

@@ -42,7 +42,7 @@ std::unique_ptr<Statement> Parser::selectStatement() {
 			break;
 		}
 
-		throw std::runtime_error("UnexpectedToken: " + peek().value );
+		throw std::runtime_error("UnexpectedToken: " + peek().value);
 	}
 
 	// 리스트가 비어있는지 여부 검사.
@@ -80,7 +80,7 @@ std::unique_ptr<Statement> Parser::createStatement() {
 	consume(TokenType::LPAREN, "expected LPAREN");
 
 	do {
-		ColumnDef col;
+		Column col;
 		QueryToken t1 = consume(TokenType::IDENTIFIER, "expected IDENTIFIER");
 		col.name = t1.value;
 		
@@ -97,7 +97,7 @@ std::unique_ptr<Statement> Parser::createStatement() {
 		}
 		advance();
 		
-		stmt->columns.push_back(col);
+		stmt->columns.push_back(std::move(col));
 
 	} while (match(TokenType::COMMA));
 
@@ -124,9 +124,14 @@ std::unique_ptr<Statement> Parser::insertStatement() {
 
 		switch (t.type) {
 		case TokenType::STRING:
-		case TokenType::NUMBER:
 			stmt->values.push_back(t.value);
 			break;
+		case TokenType::NUMBER:
+		{
+			int intVal = std::stoi(t.value);
+			stmt->values.push_back(intVal);
+			break;
+		}
 		default:
 			throw std::runtime_error("유효하지 않은 값");
 		
@@ -153,7 +158,7 @@ ExprPtr Parser::parseExpression(){
 
 	ExprPtr leftExpr;
 	ExprPtr rightExpr;
-	std::string op;
+	BinaryOp op;
 
 	
 	//TODO AND문 재귀하강 처리
@@ -170,17 +175,27 @@ ExprPtr Parser::parseExpression(){
 		QueryToken opToken = peek();
 		switch (opToken.type) {
 		case TokenType::EQUAL:
+			op = BinaryOp::EQUAL;
+			break;
+		case TokenType::NEQ:
+			op = BinaryOp::NEQ;
+			break;
 		case TokenType::LT:
+			op = BinaryOp::LT;
+			break;
 		case TokenType::LTE:
+			op = BinaryOp::LTE;
+			break;
 		case TokenType::GT:
+			op = BinaryOp::GT;
+			break;
 		case TokenType::GTE:
-			op = opToken.value;
-			advance();
+			op = BinaryOp::GTE;
 			break;
 		default :
 			throw std::runtime_error("Expected OPERATOR");
 		}
-
+		advance();
 
 		if (isAtEnd()) {
 			throw std::runtime_error("Unexpected end or input");

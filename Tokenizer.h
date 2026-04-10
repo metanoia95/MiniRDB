@@ -36,6 +36,7 @@ enum class TokenType {
 
 	// 연산자
 	EQUAL, // =
+	NEQ, // !=
 	PLUS, // +
 	MINUS, // -
 	ASTERISK, // *
@@ -59,7 +60,7 @@ enum class TokenType {
 struct QueryToken {
 
 	TokenType type; //토큰 타입
-	std::string value; // 토큰 값
+	std::string value;  // 원본 텍스트
 };
 
 
@@ -114,6 +115,7 @@ public :
 		case TokenType::GT: return "GT";
 		case TokenType::GTE: return "GTE";
 		case TokenType::BANG: return "BANG";
+		case TokenType::NEQ: return "NEQ";
 
 		// 기타
 		case TokenType::END_OF_FILE: return "END_OF_FILE";
