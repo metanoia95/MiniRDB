@@ -1,6 +1,7 @@
 ﻿#include "parser.h"
 #include <stdexcept> // 예외처리 객체
 #include <iostream>
+#include <string> // std::stoi : string->int
 std::unique_ptr<Statement> Parser::parse() {
 
 	// 재귀하강 파서.
@@ -240,7 +241,7 @@ ExprPtr Parser::parsePrimary() {
 		return std::make_unique<LiteralExpression>(DataType::TEXT, token.value);
 	case TokenType::NUMBER:
 		advance();
-		return std::make_unique<LiteralExpression>(DataType::INT, token.value);
+		return std::make_unique<LiteralExpression>(DataType::INT, std::stoi(token.value));
 	default:
 		throw std::runtime_error("Expected IDENTIFIER or LITERAL");
 	}

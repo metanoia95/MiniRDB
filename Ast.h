@@ -34,9 +34,21 @@ public:
 
 
 // 식(expression) --------------------------------------------------------------
+enum class ExpressionClass {
+	INVALID,
+	COLUMN_REF,
+	LITERAL,
+	BINARY,
+	UNARY
+};
+
 class Expression : public ASTNode {
 
 public:
+	ExpressionClass expression_class;
+
+	explicit Expression(ExpressionClass cls) : expression_class(cls) {};
+
 	// 가상소멸자
 	virtual ~Expression() = default;
 
@@ -53,7 +65,8 @@ public:
 	std::string column_name;
 
 	// 1. 생성자
-	explicit ColumnExpression(const std::string& name) : column_name(name) {}
+	explicit ColumnExpression(const std::string& name) 
+		:Expression(ExpressionClass::COLUMN_REF), column_name(name) { }
 
 	// 2. 방문자 
 	void accept(AstVisitor& v) override;
@@ -68,7 +81,8 @@ public:
 	//일단 스트링으로 저장
 
 	// 1. 생성자
-	LiteralExpression(DataType t, const Value& v) :type(t), value(v) {}
+	LiteralExpression(DataType t, const Value& v) 
+		:Expression(ExpressionClass::LITERAL), type(t), value(v) {}
 
 	// 2. 방문자 
 	void accept(AstVisitor& v) override;
@@ -89,6 +103,7 @@ public :
 
 	// 생성자
 	BinaryExpression(BinaryOp op_, ExprPtr lhs, ExprPtr rhs) :
+		Expression(ExpressionClass::BINARY),
 		op(std::move(op_)), left(std::move(lhs)), right(std::move(rhs)) {}
 	// ExprPtr 객체가 유니크포인터를 사용하므로 move를 사용해야만 소유권이 이전됨.
 
@@ -108,8 +123,9 @@ public:
 	ExprPtr operand;
 
 	//생성자
-	UnaryExpression(std::string op_, ExprPtr expr) 
-		: op(std::move(op_)), operand(std::move(expr)) {}
+	UnaryExpression(std::string op_, ExprPtr expr) :
+		Expression(ExpressionClass::UNARY),
+		op(std::move(op_)), operand(std::move(expr)) {}
 
 	// 2. 방문자 
 	void accept(AstVisitor& v) override;

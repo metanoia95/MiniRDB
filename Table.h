@@ -68,12 +68,18 @@ public:
 	}
 
 	//컬럼 명으로 인덱스 조회
-	size_t getColumnIdx(std::string& name) {
-		for (size_t i = 0; i < columns.size(); i++) {
+	int getColumnIdx(const std::string& name) {
+		for (int i = 0; i < getColumnCount(); i++) {
 			if (columns[i].name == name) {
 				return i;
 			}
 		}
+		return -1;
+	}
+
+	// 컬럼 타입 조회
+	DataType getColumnType(const size_t& idx) {
+		return columns[idx].type;
 	}
 
 
@@ -82,7 +88,14 @@ public:
 		return rowCount;
 	}
 	
+	// 행 조회
+	Row getRow(int idx) {
+		return rows[idx];
+	}
 
-
+	// 행 전체 조회
+	std::vector<Row> getRows() {
+		return rows;
+	}
 
 };

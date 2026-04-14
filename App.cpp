@@ -12,13 +12,14 @@ void App::run() {
 	while (App::isRunning) {
 
 		std::vector<std::string> testQuerys = {
-			"SELECT * FROM users;",
+			//"SELECT * FROM users;",
 			//"CREATE TABLE users (id INT, name TEXT);",
-			"INSERT INTO users VALUES (144, 'kimsuki');",
-			"INSERT INTO users VALUES (1667, 'It''s a good day to die');",
-			"SELECT name, id FROM users;",
-			"SELECT name, id FROM users WHERE name = 'glory';"
-			"SELECT name, id FROM users WHERE name >= 'glory';",
+			//"INSERT INTO users VALUES (144, 'kimsuki');",
+			//"INSERT INTO users VALUES (1667, 'It''s a good day to die');",
+			//"SELECT name, id FROM users;",
+			//"SELECT id FROM users;",
+			//"SELECT name, id FROM users WHERE name = 'kimsuki';"
+			"SELECT name, id FROM users WHERE id >= 5;",
 		};
 
 		std::string query;
@@ -57,6 +58,10 @@ void App::run() {
 			// 실행 방문자
 			AstExecutor executor;
 			stmt->accept(executor);
+
+			std::string json = executor.lastReturnSet.toJson();
+			std::cout << json << std::endl;
+
 			
 		}
 

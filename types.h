@@ -3,13 +3,20 @@
 #include <variant>
 #include <vector>
 #include <memory>
+#include <sstream>
 
-
-// Value
+// 1. Value - 컬럼에서 가능한 데이터 타입 =======================================
 // std::variant<int, std::string> 라는 타입을 Value라는 이름으로 사용
 using Value = std::variant<int, std::string>;
 
 #include "FileIoStrategy.h"
+
+inline std::ostream& operator<<(std::ostream& os, const Value& v) {
+	std::visit([&os](auto&& arg) {
+		os << arg;
+		}, v);
+	return os;
+}
 
 enum class DataType {
 	INT,
@@ -25,6 +32,7 @@ inline std::string dataTypeToString(DataType type) {
 	}
 }
 
+//2. op - 연산자 타입 ====================================================
 enum class BinaryOp {
 
 	// 비교 연산자
@@ -42,6 +50,23 @@ enum class BinaryOp {
 	ASTERISK, // *
 	SLASH, // /
 
+};
+
+
+//헬퍼 함수 
+// inline : 링커에게 "이 함수는 여러 번 중복되어도 괜찮으니 하나로 합쳐라
+inline bool evaluateBinary(Value leftValue, BinaryOp op, Value rightValue) {
+	switch (op) {
+	case BinaryOp::EQUAL:  return leftValue == rightValue;
+	case BinaryOp::NEQ: return leftValue!=rightValue;
+	case BinaryOp::LT: return leftValue < rightValue;
+	case BinaryOp::LTE: return leftValue <= rightValue;
+	case BinaryOp::GT: return leftValue > rightValue;
+	case BinaryOp::GTE: return leftValue >= rightValue;
+	default:             return false;
+	}
+
+	return false;
 };
 
 //toString함수
@@ -62,7 +87,7 @@ inline std::string binaryOpToString(BinaryOp type) {
 	}
 }
 
-// 컬럼
+// 3. 컬럼 ===================================================================
 struct Column {
 
 	std::string name = "";// 컬럼이름
@@ -94,12 +119,68 @@ struct Column {
 
 
 
-// Row
+// 4. 행 ========================================================================
 struct Row {
 
 	std::vector<Value> values; //컬럼 값들의 배열.
 	// Value* values; // 컬럼 값들의 배열. Value 타입 객체를 가리키는 포인터 변수
 	// Value 배열의 시작주소를 저장하는 포인터 변수.
 	//int valueCount; // 컬럼 값의 개수 * 벡터로 전환. 불필요
+
+	void clear() {
+		values.clear();
+	}
 	
 };
+
+// 5. 리턴 셋
+struct ReturnSet {
+
+	std::vector<std::string> columnNames;
+	std::vector<DataType> columnTypes;
+
+	std::vector<Row> rows;
+
+	// json으로 출력
+	std::string toJson() {
+		// TODO : 일단 타입 무시하고 전부 쌍따옴표 붙여서 출력
+		std::stringstream ss;
+
+		ss << "{";
+		
+		// 컬럼명 표시
+		ss << "\"columnNames\":["; // \" - 쌍따옴표 표시
+		for (size_t i = 0; i < columnNames.size(); i++) {
+			ss << "\"" << columnNames[i] << "\"" << (i == columnNames.size() - 1 ? "" : ",");
+		}
+		ss << "],";
+		
+		// rows 표시
+		ss << "\"rows\":["; 
+		for (size_t i = 0; i < rows.size(); i++) {
+			ss << "[";
+			for (size_t j = 0; j < rows[i].values.size(); j++) {
+				ss << "\"" << rows[i].values[j] << "\"" << (j == rows[i].values.size() - 1 ? "" : ",");
+			}
+			ss << "]" << (i == rows.size()-1 ? "":",");
+		}
+		ss << "]";
+
+		ss << "}";
+		// 결과값.
+		// {
+		// columnNames : [ id, user ]
+		// rows : [[1, alice], [2, brother]]
+		// }
+
+		return ss.str();
+	}	
+
+	void clear() {
+		columnNames.clear();
+		columnTypes.clear();
+		rows.clear();
+	
+	}
+};
+

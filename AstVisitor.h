@@ -3,6 +3,7 @@
 #include "StorageManager.h"
 #include <iostream>
 #include <memory>
+#include <cassert>
 
 // 전방 선언. 클래스가 있다는 것만 알려줌.(순환참조 방지)
 // expression
@@ -127,7 +128,13 @@ class AstPrinter : public AstVisitor {
 
 // 실행기 
 class AstExecutor : public AstVisitor {
+
+public:
+	// 스토리지 매니저.
 	StorageManager manager;
+
+	// 리턴 객체
+	ReturnSet lastReturnSet;
 
 	//Create
 	void visit(CreateStatement& node) {
@@ -144,31 +151,101 @@ class AstExecutor : public AstVisitor {
 		// FROM 절 처리
 		Table t = manager.getTable(node.from);
 		
+		//t.printTable();
+
+		std::vector<Row> filteredRows;
 		// WHERE절 처리
 		if (node.where != nullptr) {
 			BinaryExpression* binExpr = dynamic_cast<BinaryExpression*>(node.where.get());
 
-			if (binExpr) { //TODO 
-				
-				
-				
+			
+			if (binExpr) { // where절이 이항연산인 경우
+				ExprPtr& left = binExpr->left;
+				ExprPtr& right = binExpr->right;
+				BinaryOp& op = binExpr->op;
+				int leftIdx = -1;
+				Value rightValue;
+
+
+				//좌항이 행인 경우
+				if (left->expression_class == ExpressionClass::COLUMN_REF) {
+					auto* col = static_cast<ColumnExpression*>(left.get());
+					leftIdx = t.getColumnIdx(col->column_name);
+				}
+
+				assert(leftIdx != -1);
+
+				//우항은 리터럴로 가정
+				if (right->expression_class == ExpressionClass::LITERAL) {
+					auto* col = static_cast<LiteralExpression*>(right.get());
+					rightValue = col->value;
+				}
+
+				Row row;
+				Value leftValue;
+				//실행기이기 때문에 연산은 100% 유효하다고 가정
+				for (int i = 0; i < t.getRowCount(); i++) {
+					row = t.getRow(i);
+					leftValue = row.values[leftIdx];
+					if (evaluateBinary(leftValue, op, rightValue)) {					
+						filteredRows.push_back(row);
+					}
+				}
+			
+			}
+			
+		}
+		else {
+			Row row;
+			//실행기이기 때문에 연산은 100% 유효하다고 가정
+			for (int i = 0; i < t.getRowCount(); i++) {
+				row = t.getRow(i);
+				filteredRows.push_back(row);
+
+			}
+		}
+
+		// 리턴셋 clear();
+		lastReturnSet.clear();
+
+		// SELECT절 처리
+		// 컬럼 인덱스 배열
+		std::vector<size_t> columIdxs;
+		for (const std::string& colName : node.select_list) {
+			if (colName == "*") {
+				for (size_t i = 0; i < t.getColumnCount(); i++) {
+					columIdxs.push_back(i);
+					lastReturnSet.columnNames.push_back(t.getColumnName(i));
+					lastReturnSet.columnTypes.push_back(t.getColumnType(i));
+				}
+			}
+			else {
+				int idx = t.getColumnIdx(colName);
+				if (idx != -1) {
+					columIdxs.push_back(idx);
+					lastReturnSet.columnNames.push_back(t.getColumnName(idx));
+					lastReturnSet.columnTypes.push_back(t.getColumnType(idx));
+				}
+				else {
+					//실행기 중단.
+					//return;
+				}
 			
 			}
 		}
-
-		// SELECT절 처리
-		std::vector<size_t> columIdxs;
-		
-		for (size_t i = 0; i<node.select_list.size(); i++) {
-			std::string col = node.select_list[i];
-			for (size_t j = 0; j < t.getColumnCount(); j++) {
-				if (col == t.getColumnName(j)) {
-					columIdxs.push_back(j);
-				}
+		// 인덱스 - 값 매핑
+		std::vector<Row> resultRows;
+		for (const Row& row : filteredRows) {
+			Row projectedRow;
+			for (size_t idx : columIdxs) {
+				projectedRow.values.push_back(row.values[idx]);
 			}
+			resultRows.push_back(projectedRow);
 		}
+		
 
-
+		//리턴셋에 추가
+		lastReturnSet.rows = resultRows;
 
 
 	}
@@ -187,5 +264,6 @@ class AstExecutor : public AstVisitor {
 	void visit(LiteralExpression& node) {}; // 리터럴 
 	void visit(BinaryExpression& node) {};  // 이항연산
 	void visit(UnaryExpression& node) {};  // 단항연산
+
 
 };

@@ -8,9 +8,11 @@ Table::Table(std::string name
 	, std::vector<Row> rows) :
 	name(name),
 	columns(std::move(columns)),
-	columnCount(columns.size()),
 	rows(rows),
-	rowCount(rows.size())
+	columnCount(this->columns.size()),
+	rowCount(this->rows.size())
+	// std::move(columns) 등으로 소유권이 이동된 경우
+	// 기존 columns 객체가 소멸되기 때문이 table(this) 객체에서 조회해야함.
 {}
 
 // 2. 소멸자
