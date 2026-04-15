@@ -150,104 +150,17 @@ public:
 		//TODO 일단 1개 테이블 조회만 하기
 		// FROM 절 처리
 		Table t = manager.getTable(node.from);
-		
-		//t.printTable();
 
-		std::vector<Row> filteredRows;
 		// WHERE절 처리
-		if (node.where != nullptr) {
-			BinaryExpression* binExpr = dynamic_cast<BinaryExpression*>(node.where.get());
+		std::vector<Row> filteredRows = filterRows(t, std::move(node.where));
 
-			
-			if (binExpr) { // where절이 이항연산인 경우
-				ExprPtr& left = binExpr->left;
-				ExprPtr& right = binExpr->right;
-				BinaryOp& op = binExpr->op;
-				int leftIdx = -1;
-				Value rightValue;
-
-
-				//좌항이 행인 경우
-				if (left->expression_class == ExpressionClass::COLUMN_REF) {
-					auto* col = static_cast<ColumnExpression*>(left.get());
-					leftIdx = t.getColumnIdx(col->column_name);
-				}
-
-				assert(leftIdx != -1);
-
-				//우항은 리터럴로 가정
-				if (right->expression_class == ExpressionClass::LITERAL) {
-					auto* col = static_cast<LiteralExpression*>(right.get());
-					rightValue = col->value;
-				}
-
-				Row row;
-				Value leftValue;
-				//실행기이기 때문에 연산은 100% 유효하다고 가정
-				for (int i = 0; i < t.getRowCount(); i++) {
-					row = t.getRow(i);
-					leftValue = row.values[leftIdx];
-					if (evaluateBinary(leftValue, op, rightValue)) {					
-						filteredRows.push_back(row);
-					}
-				}
-			
-			}
-			
-		}
-		else {
-			Row row;
-			//실행기이기 때문에 연산은 100% 유효하다고 가정
-			for (int i = 0; i < t.getRowCount(); i++) {
-				row = t.getRow(i);
-				filteredRows.push_back(row);
-
-			}
-		}
 
 		// 리턴셋 clear();
 		lastReturnSet.clear();
 
 		// SELECT절 처리
-		// 컬럼 인덱스 배열
-		std::vector<size_t> columIdxs;
-		for (const std::string& colName : node.select_list) {
-			if (colName == "*") {
-				for (size_t i = 0; i < t.getColumnCount(); i++) {
-					columIdxs.push_back(i);
-					lastReturnSet.columnNames.push_back(t.getColumnName(i));
-					lastReturnSet.columnTypes.push_back(t.getColumnType(i));
-				}
-			}
-			else {
-				int idx = t.getColumnIdx(colName);
-				if (idx != -1) {
-					columIdxs.push_back(idx);
-					lastReturnSet.columnNames.push_back(t.getColumnName(idx));
-					lastReturnSet.columnTypes.push_back(t.getColumnType(idx));
-				}
-				else {
-					//실행기 중단.
-					//return;
-				}
-			
-			}
-		}
-		// 인덱스 - 값 매핑
-		std::vector<Row> resultRows;
-		for (const Row& row : filteredRows) {
-			Row projectedRow;
-			for (size_t idx : columIdxs) {
-				projectedRow.values.push_back(row.values[idx]);
-			}
-			resultRows.push_back(projectedRow);
-		}
+		lastReturnSet = projectColumns(t, filteredRows, node.select_list);
 		
-
-		//리턴셋에 추가
-		lastReturnSet.rows = resultRows;
-
-
 	}
 
 	//Insert 
@@ -266,4 +179,115 @@ public:
 	void visit(UnaryExpression& node) {};  // 단항연산
 
 
+private :
+	
+	// where절 처리
+	std::vector<Row> filterRows(Table& t, ExprPtr whereExpr) {
+		std::vector<Row> filteredRows;
+		if (whereExpr != nullptr) {
+			
+
+			// 이항연산인 경우
+			if (whereExpr->expression_class == ExpressionClass::BINARY) {
+				BinaryExpression* binExpr = static_cast<BinaryExpression*>(whereExpr.get());
+			
+				ExprPtr& left = binExpr->left;
+				ExprPtr& right = binExpr->right;
+				//int leftIdx = -1;
+				//Value rightValue;
+
+
+				// 바인드 TODO : 일단 하드코딩 해둠. 재귀적으로 처리하거나 스택으로 처리하는 것을 고민해볼것.
+				//좌항이 행인 경우
+				if (left->expression_class == ExpressionClass::COLUMN_REF) {
+					auto* col = static_cast<ColumnExpression*>(left.get());
+					col->bind(t);
+				}
+				if (right->expression_class == ExpressionClass::COLUMN_REF) {
+					auto* col = static_cast<ColumnExpression*>(right.get());
+					col->bind(t);
+				}
+
+
+				//Row row;
+				//Value leftValue;
+				////실행기이기 때문에 연산은 100% 유효하다고 가정
+				//for (int i = 0; i < t.getRowCount(); i++) {
+				//	row = t.getRow(i);
+				//	leftValue = row.values[leftIdx];
+				//	if (evaluateBinary(leftValue, op, rightValue)) {
+				//		filteredRows.push_back(row);
+				//	}
+				//}
+				Row row;
+				for (int i = 0; i < t.getRowCount(); i++) {
+					row = t.getRow(i);
+					if (std::get<bool>(binExpr->interpret(row))) { //evaluate에서 bool 리턴함.
+						filteredRows.push_back(row);
+					}
+					
+				}
+
+
+			}
+
+		}
+		else { // where절 안 타는 경우
+			Row row;
+			//실행기이기 때문에 연산은 100% 유효하다고 가정
+			for (int i = 0; i < t.getRowCount(); i++) {
+				row = t.getRow(i);
+				filteredRows.push_back(row);
+			}
+		}
+
+		return filteredRows;
+	
+	}
+
+	// SELECT절 처리
+	ReturnSet projectColumns( Table& t, std::vector<Row>& filteredRows, std::vector<std::string>& selectList) {
+
+		ReturnSet returnSet;
+
+		// 컬럼 인덱스 배열
+		std::vector<size_t> columIdxs;
+		for (const std::string& colName : selectList) {
+			if (colName == "*") {
+				for (size_t i = 0; i < t.getColumnCount(); i++) {
+					columIdxs.push_back(i);
+					returnSet.columnNames.push_back(t.getColumnName(i));
+					returnSet.columnTypes.push_back(t.getColumnType(i));
+				}
+			}
+			else {
+				int idx = t.getColumnIdx(colName);
+				if (idx != -1) {
+					columIdxs.push_back(idx);
+					returnSet.columnNames.push_back(t.getColumnName(idx));
+					returnSet.columnTypes.push_back(t.getColumnType(idx));
+				}
+				else {
+					//실행기 중단.
+					//return;
+				}
+
+			}
+		}
+		// 인덱스 - 값 매핑
+		std::vector<Row> resultRows;
+		for (const Row& row : filteredRows) {
+			Row projectedRow;
+			for (size_t idx : columIdxs) {
+				projectedRow.values.push_back(row.values[idx]);
+			}
+			resultRows.push_back(projectedRow);
+		}
+
+		returnSet.rows = resultRows;
+
+		return returnSet;
+	};
+
+	
 };

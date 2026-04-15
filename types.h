@@ -7,7 +7,7 @@
 
 // 1. Value - 컬럼에서 가능한 데이터 타입 =======================================
 // std::variant<int, std::string> 라는 타입을 Value라는 이름으로 사용
-using Value = std::variant<int, std::string>;
+using Value = std::variant<int, std::string, bool>;
 
 #include "FileIoStrategy.h"
 

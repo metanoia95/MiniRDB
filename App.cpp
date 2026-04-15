@@ -20,6 +20,7 @@ void App::run() {
 			//"SELECT id FROM users;",
 			//"SELECT name, id FROM users WHERE name = 'kimsuki';"
 			"SELECT name, id FROM users WHERE id >= 5;",
+			"SELECT name, id FROM users WHERE 5 > id;"
 		};
 
 		std::string query;

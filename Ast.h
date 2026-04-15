@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 #include "types.h"
+#include "Table.h"
 
 // 전방선언
 class AstVisitor;
@@ -47,22 +48,26 @@ class Expression : public ASTNode {
 public:
 	ExpressionClass expression_class;
 
+	// 생성자
 	explicit Expression(ExpressionClass cls) : expression_class(cls) {};
 
 	// 가상소멸자
 	virtual ~Expression() = default;
 
+	// 인터프리터
+	virtual Value interpret (const Row& row) = 0;
 
 };
 
 // Alias
 using ExprPtr = std::unique_ptr<Expression>;
 
-// 컬럼 참조  age, name
+// 컬럼 참조  age, name ===============================
 class ColumnExpression : public Expression {
 	
 public:
 	std::string column_name;
+	int cached_idx = -1;
 
 	// 1. 생성자
 	explicit ColumnExpression(const std::string& name) 
@@ -70,9 +75,18 @@ public:
 
 	// 2. 방문자 
 	void accept(AstVisitor& v) override;
+
+	// 3. 인터프리터
+	Value interpret(const Row& row) override { return row.values[cached_idx]; }
+
+	// [중요] 실행 루프에 들어가기 전에 이 함수를 딱 한 번 호출해줍니다.
+	void bind(const Table& t) {
+		cached_idx = t.getColumnIdx(column_name);
+	}
 };
 
-// 리터럴  123, 'hello'
+
+// 리터럴  123, 'hello' ===============================
 class LiteralExpression : public Expression {
 	
 public: 
@@ -86,9 +100,14 @@ public:
 
 	// 2. 방문자 
 	void accept(AstVisitor& v) override;
+
+	// 3. 인터프리터
+	Value interpret(const Row& row) {
+		return value;
+	}
 };
 
-// 이항 연산 a + b, age > 20, x AND y
+// 이항 연산 a + b, age > 20, x AND y =============================
 class BinaryExpression : public Expression {
 
 public :
@@ -110,9 +129,17 @@ public :
 	// 2. 방문자 
 	void accept(AstVisitor& v) override;
 
+	// 3. 인터프리터
+	Value interpret(const Row& row) override{
+
+		Value leftVal = left->interpret(row);
+		Value rightVal = right->interpret(row);
+
+		return evaluateBinary(leftVal, op, rightVal);
+	}
 };
 
-// 단항 연산 not, -a
+// 단항 연산 not, -a ==============================================
 class UnaryExpression : public Expression {
 	
 public:
@@ -130,6 +157,8 @@ public:
 	// 2. 방문자 
 	void accept(AstVisitor& v) override;
 
+	// TODO : 나중에 단항연산 추가하면 추가
+	Value interpret(const Row& row) {};
 };
 
 

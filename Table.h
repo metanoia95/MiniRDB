@@ -68,7 +68,7 @@ public:
 	}
 
 	//컬럼 명으로 인덱스 조회
-	int getColumnIdx(const std::string& name) {
+	int getColumnIdx(const std::string& name) const {
 		for (int i = 0; i < getColumnCount(); i++) {
 			if (columns[i].name == name) {
 				return i;
