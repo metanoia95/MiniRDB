@@ -146,27 +146,27 @@ struct ReturnSet {
 		// TODO : 일단 타입 무시하고 전부 쌍따옴표 붙여서 출력
 		std::stringstream ss;
 
-		ss << "{";
+		ss << "{\n";
 		
 		// 컬럼명 표시
 		ss << "\"columnNames\":["; // \" - 쌍따옴표 표시
 		for (size_t i = 0; i < columnNames.size(); i++) {
 			ss << "\"" << columnNames[i] << "\"" << (i == columnNames.size() - 1 ? "" : ",");
 		}
-		ss << "],";
+		ss << "],\n";
 		
 		// rows 표시
-		ss << "\"rows\":["; 
+		ss << "\"rows\":[\n"; 
 		for (size_t i = 0; i < rows.size(); i++) {
 			ss << "[";
 			for (size_t j = 0; j < rows[i].values.size(); j++) {
 				ss << "\"" << rows[i].values[j] << "\"" << (j == rows[i].values.size() - 1 ? "" : ",");
 			}
-			ss << "]" << (i == rows.size()-1 ? "":",");
+			ss << "]\n" << (i == rows.size()-1 ? "":",");
 		}
 		ss << "]";
 
-		ss << "}";
+		ss << "\n}";
 		// 결과값.
 		// {
 		// columnNames : [ id, user ]

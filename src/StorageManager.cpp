@@ -103,7 +103,9 @@ const std::vector <std::string> StorageManager::readRow(const std::string& table
 
 // 테이블 전체 조회 버퍼
 Table StorageManager::getTable(const std::string& tableName) {
-	
+
+	std::cout << "현재 작업 경로: " << std::filesystem::current_path() << std::endl;
+
 	std::vector<Column> columns = getTableCatalog(tableName);
 
 	std::vector<Row> allRows;
@@ -131,8 +133,6 @@ Table StorageManager::getTable(const std::string& tableName) {
 
 //디렉토리 생성
 void StorageManager::initDirectory() {
-	
-
 	if (!fs::exists(DATA_DIR)) {
 		if (fs::create_directory(DATA_DIR)) {
 			std::cout << "디렉토리 생성 : " << DATA_DIR << std::endl;

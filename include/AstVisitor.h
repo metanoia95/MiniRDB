@@ -193,8 +193,6 @@ private :
 			
 				ExprPtr& left = binExpr->left;
 				ExprPtr& right = binExpr->right;
-				//int leftIdx = -1;
-				//Value rightValue;
 
 
 				// 바인드 TODO : 일단 하드코딩 해둠. 재귀적으로 처리하거나 스택으로 처리하는 것을 고민해볼것.
@@ -208,17 +206,8 @@ private :
 					col->bind(t);
 				}
 
-
-				//Row row;
-				//Value leftValue;
 				////실행기이기 때문에 연산은 100% 유효하다고 가정
-				//for (int i = 0; i < t.getRowCount(); i++) {
-				//	row = t.getRow(i);
-				//	leftValue = row.values[leftIdx];
-				//	if (evaluateBinary(leftValue, op, rightValue)) {
-				//		filteredRows.push_back(row);
-				//	}
-				//}
+
 				Row row;
 				for (int i = 0; i < t.getRowCount(); i++) {
 					row = t.getRow(i);
