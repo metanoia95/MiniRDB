@@ -56,7 +56,6 @@ enum class TokenType {
 };
 
 
-
 struct QueryToken {
 
 	TokenType type; //토큰 타입
@@ -149,7 +148,8 @@ public :
 
 	};
 
-
+	void printTokenizedQuery(
+		const std::vector<QueryToken> tokens);
 
 
 private :

@@ -21,10 +21,12 @@ class ServerSocket {
 private:
 
 
-    void handleClient(SOCKET clientSocket);
+    void handleClient(SOCKET clientSocket) {};
+
+    std::string readRequest(SOCKET clientSocket);
 
     //정리
-    void cleanUp();
+    void cleanUp(SOCKET clientSocket);
 
     std::string port_;
     SOCKET listenSocket_;
@@ -33,7 +35,7 @@ private:
 public:
 
     ServerSocket(const std::string& port): port_(port), listenSocket_(INVALID_SOCKET), isRunning(false) {};
-    ~ServerSocket();
+    ~ServerSocket() {};
 
     bool init();
 

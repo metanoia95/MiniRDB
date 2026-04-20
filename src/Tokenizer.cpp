@@ -1,7 +1,10 @@
 ﻿#include "Tokenizer.h"
 #include <cctype>
 #include <algorithm>
+#include <iostream>
 
+// public ===============================================
+// 1. 토크나이저
 std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 
 	//예시 쿼리
@@ -36,7 +39,7 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 		
 		if (isspace(c)) continue; //공백인 경우 
 
-		if (c == '\'') { //시작 따옴표 ' 감지 
+		if (c == '\'') { //문자열 처리 -  문자열은 '' 로 감싸져 있어야함. 시작 따옴표 ' 감지 
 			std::string literal;
 			i++; //시작 따옴표 다음칸으로 이동
 			while (i < query.size()) {
@@ -65,13 +68,12 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 			tokens.push_back({ TokenType::STRING, literal });
 
 		}
-		else if (isalpha(c)){ //알파벳인 경우
+		else if (isalpha(c)){ // 문자열이 아니면서 알파벳인 경우
 			
 			std::string word;
-			while (i < query.size() && isalnum(query[i])) { 
+			while (i < query.size() && (isalnum(query[i]) || query[i]== '_')) {
 				word += query[i];
 				i++;
-
 			}
 			i--;
 			
@@ -177,6 +179,19 @@ std::vector<QueryToken> Tokenizer::tokenize(const std::string& query) {
 }
 
 
+// 2. 토큰화된 쿼리 프린트
+void Tokenizer::printTokenizedQuery(const std::vector<QueryToken> tokens) {
+	for (QueryToken token : tokens) {
+		std::string type = typeToString(token.type);
+		std::cout << '[' << type << ',' << token.value << ']';
+	}
+	std::cout << std::endl;
+
+};
+
+
+
+// private ===============================================
 bool Tokenizer::isOperator(char c) {
 	return c == '=' || c == '+' || c == '-' || c == '<' || 
 		c == '>' || c == '*' || c == '/' || c == '!';

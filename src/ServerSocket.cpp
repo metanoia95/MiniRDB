@@ -1,5 +1,8 @@
 ﻿#include "ServerSocket.h"
+#include "ThreadPool.h"
+#include "App.h"
 #include <sstream>
+
 
 bool ServerSocket::init() {
 	
@@ -15,6 +18,7 @@ bool ServerSocket::init() {
     // 2. 주소설정
     // getaddrinfo 함수 는 sockaddr 구조체 의 값을 확인하는 데 사용
     struct addrinfo* result = NULL, * ptr = NULL, hints;
+    ZeroMemory(&hints, sizeof(hints));
     hints.ai_family = AF_INET;  //IPv4 주소패밀리 지정
     hints.ai_socktype = SOCK_STREAM; // 스트림 소켓 지정
     hints.ai_protocol = IPPROTO_TCP; // TCP 프로토콜 지정
@@ -27,6 +31,7 @@ bool ServerSocket::init() {
     // getaddrinfo 함수가 char*을 받는 관계로 c_str()처리
     iResult = getaddrinfo(NULL, port_.c_str(), &hints, &result);
     if (iResult != 0) { 
+        std::cout << " 주소설정 실패 " << WSAGetLastError();
         WSACleanup();
         return false;
     };
@@ -71,7 +76,11 @@ bool ServerSocket::init() {
 
 void ServerSocket::run() {
 
+    // 데이터베이스 엔진 객체
+    App app;
+
     while (isRunning) {
+
 
         // 소켓 연결 수락
         SOCKET ClientSocket = accept(listenSocket_, NULL, NULL);
@@ -87,58 +96,38 @@ void ServerSocket::run() {
             printf("accept failed: %d\n", WSAGetLastError()); // 소켓연결 실패 로깅 
             continue; // 다음 루프로 점프.
         }
+        std::cout << "소켓 연결 : " << ClientSocket << std::endl;
 
-        char recvbuf[DEFAULT_BUFLEN]; // 버퍼 준비
-        int iResult, iSendResult;
-        int recvbuflen = DEFAULT_BUFLEN;  // 버퍼 길이 512. 4096도 많이 사용함.
-        std::stringstream ss;
+        
+        std::string request = readRequest(ClientSocket);
+        // TODO 쿼리 객체일지 아니면 추가적인 할당이 필요한지 고민.
+        std::cout << "리퀘스트 객체 :" << request << std::endl;
 
-        do {
-            iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
-            // ClientSocket에서 데이터 받아서 버퍼에 적재
-            /*
-            *   1. 클라이언트가 정보 송신
-            *   2. OS커널의 수신 버퍼에 적재
-            *   3. recv 함수 호출 -> 커널 버퍼 확인 -> recvbuf로 데이터 복사 -> 버퍼 포인터 이동.
-            *   다음 recv 호출 시 OS가 그 다음 데이터부터 복사해줌.
-            *
-                recvbuf: 데이터를 담을 배열의 시작 주소.
-                recvbuflen: 버퍼 크기 정보. 오버플로우 방지 및 특정 길이만큼 호출.
-                iResult: 실제로 버퍼 담긴 데이터 크기
-            */
+        //* 소켓 테스트 방법 (텔넷)
+        /* 0. 제어판 -> 프로그램 및 기능 -> windows 기능 켜기 / 끄기 -> 텔넷 클라이언트 체크
+           1. CMD -> telnet localhost 27015 #포트는 가변
+           2. 쿼리 입력 후 요청여부 체크하기
+           # CTRL+] -> set localecho 
+           내가 친 명령어 보기
+           */
 
-            if (iResult > 0) {
-                ss.write(recvbuf, iResult);
-                // 방금 받은 데이터 뭉치의 가장 마지막 글자 확인
-                if (recvbuf[iResult - 1] == ';') { 
-                    // TODO. 아주 우연히도 패킷의 마지막 값이 ;일 가능성이 있는데
-                    // 어떻게 처리할지 고민할 것.
-                    break;
-                }
-            }
-        } while (iResult > 0); //
-        // send 및 recv 함수 는 각각 전송 또는 수신된 바이트 수를 나타내는 정수 값을 반환하거나 오류를 반환
-        //TODO ss로 전부 받았으면 쿼리 엔진 호출하고 처리
+        // TODO 
+        // 리턴값 보내기 & 멀티스레딩 처리. 멀티 쓰레딩은 나중에 처리. 결과부터.
+        int iSendResult;
+        //std::string response = "리스폰스"; // TODO 쿼리 결과 리턴.
+        std::string response = app.runQuery(request); // TODO 쿼리 결과 리턴.
+        send(ClientSocket, response.c_str(), response.size(), 0);
 
-
-
-
-        int iResult;
         // 커넥션 종료
-        iResult = shutdown(ClientSocket, SD_SEND);
-        if (iResult == SOCKET_ERROR) {
-            printf("shutdown failed: %d\n", WSAGetLastError());
-            closesocket(ClientSocket);
-            WSACleanup();
-            return;
-        }
-
+        cleanUp(ClientSocket);
+        std::cout << "3. 클라이언트 정리 완료. 다음 루프로 이동" << std::endl;
     
     }
 
 
 }
 
+// 
 void ServerSocket::stop() { // 전체 서버 종료
 
     // 1. 루프 정지 플래그
@@ -155,6 +144,49 @@ void ServerSocket::stop() { // 전체 서버 종료
 }
 
 // 소켓 정리 함수
-void ServerSocket::cleanUp() {
+void ServerSocket::cleanUp(SOCKET ClientSocket) {
+    int iResult;
+    iResult = shutdown(ClientSocket, SD_SEND);
+    if (iResult == SOCKET_ERROR) {
+        std::cout << "소켓 셧다운 실패 : " << WSAGetLastError() << std::endl;
+    }
+    closesocket(ClientSocket); // 소켓 자원 반환
+    std::cout << "커넥션 종료 : " << ClientSocket << std::endl;
+}
+
+// 요청 리딩 함수 
+std::string ServerSocket::readRequest(SOCKET clientSocket) {
+
+    char recvbuf[DEFAULT_BUFLEN]; // 버퍼 준비
+    int iResult, iSendResult;
+    int recvbuflen = DEFAULT_BUFLEN;  // 버퍼 길이 512. 4096도 많이 사용함.
+    std::stringstream ss;
+
+    do {
+        iResult = recv(clientSocket, recvbuf, recvbuflen, 0);
+        // ClientSocket에서 데이터 받아서 버퍼에 적재
+        /*
+        *   1. 클라이언트가 정보 송신
+        *   2. OS커널의 수신 버퍼에 적재
+        *   3. recv 함수 호출 -> 커널 버퍼 확인 -> recvbuf로 데이터 복사 -> 버퍼 포인터 이동.
+        *   다음 recv 호출 시 OS가 그 다음 데이터부터 복사해줌.
+        *
+            recvbuf: 데이터를 담을 배열의 시작 주소.
+            recvbuflen: 버퍼 크기 정보. 오버플로우 방지 및 특정 길이만큼 호출.
+            iResult: 실제로 버퍼 담긴 데이터 크기
+        */
+
+        if (iResult > 0) {
+            ss.write(recvbuf, iResult);
+            // 방금 받은 데이터 뭉치의 가장 마지막 글자 확인
+            if (recvbuf[iResult - 1] == ';') {
+                // TODO. 아주 우연히도 패킷의 마지막 값이 ;일 가능성이 있는데
+                // 어떻게 처리할지 고민할 것.
+                break;
+            }
+        }
+    } while (iResult > 0); //
+
+    return ss.str();
 
 }
