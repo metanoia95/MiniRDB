@@ -14,7 +14,7 @@ file(GLOB SOURCES "src/*.cpp")
 list(APPEND SOURCES "main.cpp")
 
 # 4. 실행 파일 이름 설정
-add_executable(MiniRDB_Server ${SOURCES} "include/ServerSocket.h" "src/ServerSocket.cpp")
+add_executable(MiniRDB_Server ${SOURCES} "include/ServerSocket.h" "src/ServerSocket.cpp" "include/StatusCode.h")
 target_include_directories(MiniRDB_Server PRIVATE include)
 # 5. 윈도우라면 소켓 라이브러리(Winsock) 연결
 if(WIN32)

@@ -12,18 +12,18 @@ public:
 	Parser(const std::vector<QueryToken>& tokens) : tokens(tokens) {}
 
 	//2. 파싱 함수
-	std::unique_ptr<Statement> parse();
+	std::unique_ptr<Statement> parse(std::unique_ptr<Statement>& outStmt);
 
-
+	// TODO : 2026.04.20 - 예외처리를 전부 제거하고 예외코드를 뱉도록 수정할것.
 
 
 private :
 
-	std::unique_ptr<Statement> selectStatement();
+	std::unique_ptr<Statement> selectStatement(std::unique_ptr<Statement>& outStmt);
 
-	std::unique_ptr<Statement> createStatement();
+	std::unique_ptr<Statement> createStatement(std::unique_ptr<Statement>& outStmt);
 
-	std::unique_ptr<Statement> insertStatement();
+	std::unique_ptr<Statement> insertStatement(std::unique_ptr<Statement>& outStmt);
 
 	ExprPtr parseExpression();
 
@@ -57,8 +57,8 @@ private :
 	const QueryToken& consume(TokenType type, std::string message) {
 		if (check(type)) return tokens[current++]; // 다음 토큰 넘어감.
 		throw std::runtime_error(message);
-
 	}
+
 	// 2.5 방금 소비한 토큰을 반환.
 	const QueryToken& previous() {
 		if (current == 0) return tokens[0];

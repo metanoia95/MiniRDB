@@ -15,16 +15,19 @@ std::string App::runQuery(std::string query) {
 
 	std::vector < QueryToken > tokens = tokenizer.tokenize(query);
 
+	//토큰 프린트문.
 	tokenizer.printTokenizedQuery(tokens);
 
 	// 파서
 	Parser parser(tokens);
 
 	// 상태 객체.
-	auto stmt = parser.parse();
+	std::unique_ptr<Statement> stmt;
+	//auto stmt = parser.parse();
+	parser.parse(stmt);
 
 	// 추상구문트리 프린트
-	//AstPrinter printer;
+	AstPrinter printer;
 	//stmt->accept(printer);
 
 	std::cout << std::endl;

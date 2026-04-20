@@ -2,20 +2,22 @@
 #include <stdexcept> // 예외처리 객체
 #include <iostream>
 #include <string> // std::stoi : string->int
-std::unique_ptr<Statement> Parser::parse() {
+#include "StatusCode.h"
+
+std::unique_ptr<Statement> Parser::parse(std::unique_ptr<Statement>& outStmt) {
 
 	// 재귀하강 파서.
 	// parse 함수에서 statement 호출.
-	if (match(TokenType::SELECT)) return selectStatement();
-	else if (match(TokenType::CREATE)) return createStatement();
-	else if (match(TokenType::INSERT)) return insertStatement();
+	if (match(TokenType::SELECT)) return selectStatement(outStmt);
+	else if (match(TokenType::CREATE)) return createStatement(outStmt);
+	else if (match(TokenType::INSERT)) return insertStatement(outStmt);
 	
 	throw std::runtime_error("지원되지 않는 명령문");
 
 }
 
 // 1. SELECT문 파서
-std::unique_ptr<Statement> Parser::selectStatement() {
+std::unique_ptr<Statement> Parser::selectStatement(std::unique_ptr<Statement>& outStmt) {
 	std::cout << "SELECT 문 파싱" <<std::endl;
 
 	// 0. 객체 선언
@@ -52,6 +54,7 @@ std::unique_ptr<Statement> Parser::selectStatement() {
 	}
 
 	consume(TokenType::FROM, "Expected FROM");
+
 	// 2. FROM절
 	stmt-> from = consume(TokenType::IDENTIFIER, "Expected IDENTIFIER").value;
 	// TODO 나중에 alias나 다른 요소도 처리
@@ -62,12 +65,13 @@ std::unique_ptr<Statement> Parser::selectStatement() {
 		stmt-> where = parseExpression();
 	}
 
+	outStmt = std::move(stmt);
 
 	return stmt;
 }
 
 // 2. Create문 파서
-std::unique_ptr<Statement> Parser::createStatement() {
+std::unique_ptr<Statement> Parser::createStatement(std::unique_ptr<Statement>& outStmt) {
 	std::cout << "CREATE 문 파싱" << std::endl;
 
 	// 0. 객체 선언
@@ -104,11 +108,13 @@ std::unique_ptr<Statement> Parser::createStatement() {
 
 	consume(TokenType::RPAREN, " ) 필요");
 
+	outStmt = std::move(stmt);
+
 	return stmt;
 }
 
 // 3. Insert문 파서
-std::unique_ptr<Statement> Parser::insertStatement() {
+std::unique_ptr<Statement> Parser::insertStatement(std::unique_ptr<Statement>& outStmt) {
 	std::cout << "INSERT 문 파싱" << std::endl;
 	// 지원 구문 예시
 	//"INSERT INTO users VALUES (1, 'kim');",
@@ -143,6 +149,7 @@ std::unique_ptr<Statement> Parser::insertStatement() {
 
 	consume(TokenType::RPAREN, ") 필요");
 
+	outStmt = std::move(stmt);
 
 	return stmt;
 }
