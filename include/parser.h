@@ -1,43 +1,51 @@
 ﻿#pragma once
 #include <vector>
 #include <memory> // 유니크포인터
+#include <charconv> 
 #include "Tokenizer.h"
 #include "Ast.h"  
-#include <stdexcept> // 예외처리 객체
+#include "StatusCode.h"
 
 class Parser {
 public:
 
 	//1. 생성자
-	Parser(const std::vector<QueryToken>& tokens) : tokens(tokens) {}
+	Parser(const std::vector<QueryToken>& tokens) 
+		: tokens(tokens) 
+		, hasError_(false)
+		, errorCode_(StatusCode::OK)
+		, errorMsg_("")
+	{};
 
 	//2. 파싱 함수
-	std::unique_ptr<Statement> parse(std::unique_ptr<Statement>& outStmt);
+	StatusCode parse(std::unique_ptr<Statement>& outStmt);
 
 	// TODO : 2026.04.20 - 예외처리를 전부 제거하고 예외코드를 뱉도록 수정할것.
 
+	// 예외 코드 정보
+	bool hasError_;
+	StatusCode errorCode_;
+	std::string errorMsg_;
 
 private :
 
-	std::unique_ptr<Statement> selectStatement(std::unique_ptr<Statement>& outStmt);
+	StatusCode selectStatement(std::unique_ptr<Statement>& outStmt);
 
-	std::unique_ptr<Statement> createStatement(std::unique_ptr<Statement>& outStmt);
+	StatusCode createStatement(std::unique_ptr<Statement>& outStmt);
 
-	std::unique_ptr<Statement> insertStatement(std::unique_ptr<Statement>& outStmt);
+	StatusCode insertStatement(std::unique_ptr<Statement>& outStmt);
 
-	ExprPtr parseExpression();
+	StatusCode parseExpression(ExprPtr& outExprPtr);
 
-	ExprPtr parsePrimary();
+	StatusCode parsePrimary(ExprPtr& outExprPtr);
 
 
-
-	// 헬퍼 함수 ===============================================================
-	//1. 멤버변수
-	const std::vector<QueryToken>& tokens;
-
+	//1. 멤버변수 ===============================================================
+	const std::vector<QueryToken>& tokens; // 파싱할 토큰 배열
 	size_t current = 0; // 현재 인덱스 위치. size_t : 배열과 vector의 인덱스 객체
 	
-	//2. 표준 파서 헬퍼 함수
+
+	//2. 표준 파서 헬퍼 함수 ===============================================================
 	// 2.1 현재 토큰 반환
 	const QueryToken& peek() const { return tokens[current]; }
 
@@ -53,10 +61,15 @@ private :
 		return true;
 	}
 
-	// 2.4 현재 토큰이 특정 토큰 타입임을 기대하고, 없으면 에러 발생. 다음 전진. 토큰 객체 리턴
-	const QueryToken& consume(TokenType type, std::string message) {
-		if (check(type)) return tokens[current++]; // 다음 토큰 넘어감.
-		throw std::runtime_error(message);
+	// 2.4 현재 토큰이 특정 토큰 타입임을 기대하고, 없으면 에러 발생 및 함수 종료. 다음 전진.
+	bool consume(TokenType type, std::string message) {
+		if (hasError_) return false;
+		if (check(type)) {
+			current++; // 다음 전진
+			return true;
+		} 
+		setErrorData(StatusCode::SYNTAX_ERROR, message);
+		return false;
 	}
 
 	// 2.5 방금 소비한 토큰을 반환.
@@ -83,6 +96,43 @@ private :
 		return tokens[current];
 	}
 
+	// 3. 에러 처리 변수 세팅 함수 ================================================
+	void setErrorData(StatusCode errorCode, const std::string& errorMsg) {
+		hasError_ = true;
+		errorCode_ = errorCode;
+		errorMsg_ = errorMsg;
+	}
+
+	// 4. 문자열 -> 숫자 변환 함수. 예외 안 뱉음.
+	/*
+		int intVal; // stoi는 내부적으로 예외를 던져서 from_chars로 교체
+			if(stringToInt(t.value, intVal)!= StatusCode::OK) return StatusCode::SYNTAX_ERROR;
+			stmt->values.push_back(intVal);
+	*/
+	StatusCode stringToInt(const std::string& strVal, int& intVal) {
+
+		const char* dataStart = strVal.data();
+		const char* dataEnd = dataStart + strVal.size();
+		auto [ptr, ec] = std::from_chars(dataStart, dataEnd, intVal);
+		// ptr 변환이 멈춘 지점의 포인터
+		// ec 에러코드 (성공시 0)
+
+		// 1. 기본변환 성공여부 체크
+		if (ec != std::errc()) {
+			setErrorData(StatusCode::SYNTAX_ERROR, "not supported string to int");
+			return StatusCode::SYNTAX_ERROR;
+		}
+
+		// 2. 찌꺼기 문자 처리
+		// 숫자 문자열이 12345db로 들어오면 12345까찌만 읽고 db는 누락됨. 
+		// 만약 숫자 문자열이 그렇게 온 경우 에러 처리
+		if (ptr != dataEnd) { // 변환이 끝난지점의 포인터가 데이터의 끝 포인터와 다른 경우
+			setErrorData(StatusCode::SYNTAX_ERROR, "숫자에 불필요 문자 포함");
+			return StatusCode::SYNTAX_ERROR;
+		}
+		return StatusCode::OK;
 	
+	}
+
 
 };

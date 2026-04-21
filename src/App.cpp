@@ -24,13 +24,15 @@ std::string App::runQuery(std::string query) {
 	// 상태 객체.
 	std::unique_ptr<Statement> stmt;
 	//auto stmt = parser.parse();
-	parser.parse(stmt);
+	if(parser.parse(stmt)!= StatusCode::OK) return parser.errorMsg_; // 에러메시지 리턴
 
 	// 추상구문트리 프린트
 	AstPrinter printer;
-	//stmt->accept(printer);
+	stmt->accept(printer);
 
 	std::cout << std::endl;
+
+	//TODO 추상구문트리 검사기 추가
 
 
 	// 실행기
@@ -48,36 +50,35 @@ std::string App::runQuery(std::string query) {
 // 쿼리문 입력 후 테스트
 void App::runQueryListTest() {
 
-	while (App::isRunning) {
+	
 
-		std::vector<std::string> testQuerys = {
-			//"SELECT * FROM users;",
-			//"CREATE TABLE users (id INT, name TEXT);",
-			//"INSERT INTO users VALUES (144, 'kimsuki');",
-			//"INSERT INTO users VALUES (1667, 'It''s a good day to die');",
-			//"SELECT name, id FROM users;",
-			//"SELECT id FROM users;",
-			//"SELECT name, id FROM users WHERE name = 'kimsuki';"
-			"SELECT name, id FROM users WHERE id >= 5;",
-			"SELECT name, id FROM users WHERE 5 > id;"
-		};
-
-		std::string query;
-		// "" :문자열, '' 문자
-
-
-
-		for (std::string testQuery : testQuerys) {
-
-			std::string json = runQuery(testQuery);
-
-			std::cout << json << std::endl;
-		}
-
-
-		App::isRunning = false; // 테스트 후 종료
-
+	std::vector<std::string> testQuerys = {
+		//"SELECT * FROM users;",
+		//"CREATE TABLE users (id INT, name TEXT);",
+		//"INSERT INTO users VALUES (144, 'kimsuki');",
+		//"INSERT INTO users VALUES (1667, 'It''s a good day to die');",
+		"SELECT name, id FROM users;",
+		"SELECT id FROM users;",
+		"SELECT name, id FROM users WHERE name = 'kimsuki';"
+		"SELECT name, id FROM users WHERE id >= 5;",
+		"SELECT name, id FROM users WHERE 5 > id;"
 	};
+
+	std::string query;
+	// "" :문자열, '' 문자
+
+
+
+	for (std::string testQuery : testQuerys) {
+
+		std::string json = runQuery(testQuery);
+
+		std::cout << json << std::endl;
+	}
+
+
+
+	
 
 };
 

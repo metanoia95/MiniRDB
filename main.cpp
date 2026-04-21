@@ -8,7 +8,8 @@ int main()
 {
     // DB 엔진
     App app;
-    //app.runQueryListTest(); // 자동 테스트 실행
+    app.runQueryListTest(); // 자동 테스트 실행
+    
     app.runCliTest();
 
     //

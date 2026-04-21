@@ -18,14 +18,14 @@ void StorageManager::createTableFile(
 	fs::path dataPath = getDataFilePath(tableName);
 	fs::path catPath = fs::path(DATA_DIR) / (tableName + ".cat");
 
-	// 테이블 데이터 파일 생성
+	// 1. 테이블 데이터 파일 생성
 	std::ofstream dataFile(dataPath, std::ios::binary| std::ios::out);
 	if (!dataFile) return;
 	dataFile.close();
 	// std::ios::out - 파일을 출력용(쓰기용)으로 염
 	// std::ios::binary - 파일을 바이너리 모드로 염.
 	
-	// 스키마 정보 저장용 카탈로그 파일 생성
+	// 2. 스키마 메타 정보 저장용 카탈로그 파일 생성
 	std::ofstream catFile(catPath, std::ios::binary | std::ios::out);
 	if (!catFile) return;
 
@@ -63,6 +63,8 @@ void StorageManager::createTableFile(
 		catFile.write(reinterpret_cast<const char*>(&typeRaw), sizeof(int));
 
 	}
+
+
 	
 	catFile.close();
 

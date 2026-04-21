@@ -1,10 +1,9 @@
 ﻿#include "parser.h"
 #include <stdexcept> // 예외처리 객체
 #include <iostream>
-#include <string> // std::stoi : string->int
-#include "StatusCode.h"
 
-std::unique_ptr<Statement> Parser::parse(std::unique_ptr<Statement>& outStmt) {
+
+StatusCode Parser::parse(std::unique_ptr<Statement>& outStmt) {
 
 	// 재귀하강 파서.
 	// parse 함수에서 statement 호출.
@@ -12,81 +11,69 @@ std::unique_ptr<Statement> Parser::parse(std::unique_ptr<Statement>& outStmt) {
 	else if (match(TokenType::CREATE)) return createStatement(outStmt);
 	else if (match(TokenType::INSERT)) return insertStatement(outStmt);
 	
-	throw std::runtime_error("지원되지 않는 명령문");
+	setErrorData(StatusCode::NOT_SUPPORTED, "지원하지 않는 구문입니다");
+	return StatusCode::NOT_SUPPORTED;
+
+	//TODO 
+	// 일일히 리턴처리 하지말고 Parser 클래스에 멤버변수 추가해서 파서 객체를 검사해서 처리. 함수 종료 후 플래그 검사
 
 }
 
 // 1. SELECT문 파서
-std::unique_ptr<Statement> Parser::selectStatement(std::unique_ptr<Statement>& outStmt) {
+StatusCode Parser::selectStatement(std::unique_ptr<Statement>& outStmt) {
 	std::cout << "SELECT 문 파싱" <<std::endl;
 
 	// 0. 객체 선언
 	auto stmt = std::make_unique<SelectStatement>();
 
-
 	// 1. SELECT * OR COL
-
-	while (!check(TokenType::FROM) && !isAtEnd()) { // FROM -> BREAK;
-		
+	do {
 		// SELECT, COMMA -> IDENTIFIER, ASTERISK
-		if (match(TokenType::ASTERISK) || match(TokenType::IDENTIFIER)){
+		if (match(TokenType::ASTERISK) || match(TokenType::IDENTIFIER)) {
 			stmt->select_list.push_back(previous().value);
 		}
 		else {
-			throw std::runtime_error("Expected ASTERISK or IDENTIFIER");
+			setErrorData(StatusCode::SYNTAX_ERROR, "Expected * or IDENTIFIER");
+			return StatusCode::SYNTAX_ERROR;
 		}
-
-		// IDENTIFIER, ASTERISK -> COMMA OR FROM
-		if (match(TokenType::COMMA)) {
-			continue; // 다음 구문으로 점프. 
-		}
-
-		if (check(TokenType::FROM)) {
-			break;
-		}
-
-		throw std::runtime_error("UnexpectedToken: " + peek().value);
-	}
-
-	// 리스트가 비어있는지 여부 검사.
-	if (stmt->select_list.empty()) { 
-		throw std::runtime_error("Expected ASTERISK or IDENTIFIER after SELECT");
-	}
-
-	consume(TokenType::FROM, "Expected FROM");
+	} while (match(TokenType::COMMA));
 
 	// 2. FROM절
-	stmt-> from = consume(TokenType::IDENTIFIER, "Expected IDENTIFIER").value;
-	// TODO 나중에 alias나 다른 요소도 처리
+	if (!consume(TokenType::FROM, "Expected FROM")) return StatusCode::SYNTAX_ERROR;
+
+	if(!consume(TokenType::IDENTIFIER, "Expected IDENTIFIER")) return StatusCode::SYNTAX_ERROR;
+	stmt->from = previous().value;
+	// TODO 나중에 alias나 다른 요소, 여러 테이블 조회 처리.
 
 	//3. WHERE절 
-	
 	if (match(TokenType::WHERE)) {
-		stmt-> where = parseExpression();
+		ExprPtr wherePtr;
+		if(parseExpression(wherePtr)!=StatusCode::OK) return StatusCode::SYNTAX_ERROR;
+		stmt-> where = std::move(wherePtr);
 	}
 
 	outStmt = std::move(stmt);
 
-	return stmt;
+	return StatusCode::OK;
 }
 
 // 2. Create문 파서
-std::unique_ptr<Statement> Parser::createStatement(std::unique_ptr<Statement>& outStmt) {
+StatusCode Parser::createStatement(std::unique_ptr<Statement>& outStmt) {
 	std::cout << "CREATE 문 파싱" << std::endl;
 
 	// 0. 객체 선언
 	auto stmt = std::make_unique<CreateStatement>();
 
-	
-	consume(TokenType::TABLE, "Syntax error, expected TABLE");
+	if(!consume(TokenType::TABLE, "Syntax error, expected TABLE")) 
 
-	
-	stmt->table = consume(TokenType::IDENTIFIER, "Syntax error, expected IDENTIFIER").value;
-	consume(TokenType::LPAREN, "expected LPAREN");
+	if(!consume(TokenType::IDENTIFIER, "Syntax error, expected IDENTIFIER")) return StatusCode::SYNTAX_ERROR;
+	stmt->table = previous().value;
+	if(!consume(TokenType::LPAREN, "expected LPAREN")) return StatusCode::SYNTAX_ERROR;
 
 	do {
 		Column col;
-		QueryToken t1 = consume(TokenType::IDENTIFIER, "expected IDENTIFIER");
+		if(!consume(TokenType::IDENTIFIER, "expected IDENTIFIER")) return StatusCode::SYNTAX_ERROR;
+		QueryToken t1 = previous();
 		col.name = t1.value;
 		
 		QueryToken t2 = peek();
@@ -98,7 +85,7 @@ std::unique_ptr<Statement> Parser::createStatement(std::unique_ptr<Statement>& o
 				col.type = DataType::INT;
 				break;
 			default:
-				throw std::runtime_error("Unexpected Type");
+				return StatusCode::SYNTAX_ERROR;
 		}
 		advance();
 		
@@ -106,25 +93,26 @@ std::unique_ptr<Statement> Parser::createStatement(std::unique_ptr<Statement>& o
 
 	} while (match(TokenType::COMMA));
 
-	consume(TokenType::RPAREN, " ) 필요");
+	if (!consume(TokenType::RPAREN, "expected RPAREN")) return StatusCode::SYNTAX_ERROR;
 
 	outStmt = std::move(stmt);
 
-	return stmt;
+	return StatusCode::OK;
 }
 
 // 3. Insert문 파서
-std::unique_ptr<Statement> Parser::insertStatement(std::unique_ptr<Statement>& outStmt) {
+StatusCode Parser::insertStatement(std::unique_ptr<Statement>& outStmt) {
 	std::cout << "INSERT 문 파싱" << std::endl;
 	// 지원 구문 예시
 	//"INSERT INTO users VALUES (1, 'kim');",
 
 	auto stmt = std::make_unique<InsertStatement>();
-	consume(TokenType::INTO, "Syntax error, expected TABLE");
-	stmt->table = consume(TokenType::IDENTIFIER, "테이블명이 필요합니다").value;
-	//TODO 컬럼지정 -- 아직 안 만듬.
-	consume(TokenType::VALUES, "VALUES 필요");
-	consume(TokenType::LPAREN, "( 필요");
+	if (!consume(TokenType::INTO, "expected INTO")) return StatusCode::SYNTAX_ERROR;
+	if (!consume(TokenType::IDENTIFIER, "테이블명이 필요합니다.")) return StatusCode::SYNTAX_ERROR;
+	stmt->table = previous().value;
+	//TODO 컬럼지정 추후 작성.
+	if (!consume(TokenType::VALUES, "expected VALUES")) return StatusCode::SYNTAX_ERROR; // VALUES 
+	if (!consume(TokenType::LPAREN, "expected LPAREN")) return StatusCode::SYNTAX_ERROR; // (
 	
 	do {
 		QueryToken t = peek();
@@ -134,31 +122,31 @@ std::unique_ptr<Statement> Parser::insertStatement(std::unique_ptr<Statement>& o
 			stmt->values.push_back(t.value);
 			break;
 		case TokenType::NUMBER:
-		{
-			int intVal = std::stoi(t.value);
+		{	
+			int intVal; // stoi는 내부적으로 예외를 던져서 from_chars로 교체
+			if(stringToInt(t.value, intVal)!= StatusCode::OK) return StatusCode::SYNTAX_ERROR;
 			stmt->values.push_back(intVal);
 			break;
 		}
 		default:
-			throw std::runtime_error("유효하지 않은 값");
-		
+			return StatusCode::SYNTAX_ERROR;
 		}
 		advance();
 	
 	} while (match(TokenType::COMMA));
 
-	consume(TokenType::RPAREN, ") 필요");
+	if (!consume(TokenType::RPAREN, "expected RPAREN")) return StatusCode::SYNTAX_ERROR; // )
 
 	outStmt = std::move(stmt);
 
-	return stmt;
+	return StatusCode::OK;
 }
 
 
 // 이항식 파서.
-ExprPtr Parser::parseExpression(){
+StatusCode Parser::parseExpression(ExprPtr& outExprPtr){
 	
-	//WHERE 다음 토큰 부터 시작
+	// WHERE 다음 토큰 부터 시작
 	//  WHERE name = 'glory';"
 	//  WHERE name >= 'glory';",
 	// where절은 무조건 이항연산?
@@ -173,10 +161,12 @@ ExprPtr Parser::parseExpression(){
 	while (!isAtEnd()) {
 
 		// 1. 좌항
-		leftExpr = parsePrimary();
+		parsePrimary(leftExpr);
+		
 		
 		if (isAtEnd()) {
-			throw std::runtime_error("Unexpected end or input");
+			setErrorData(StatusCode::SYNTAX_ERROR, "Unexpected end or input");
+			return StatusCode::SYNTAX_ERROR;
 		}
 
 		// 2. 연산자
@@ -201,18 +191,19 @@ ExprPtr Parser::parseExpression(){
 			op = BinaryOp::GTE;
 			break;
 		default :
-			throw std::runtime_error("Expected OPERATOR");
+			setErrorData(StatusCode::SYNTAX_ERROR, "Expected OPERATOR");
+			return StatusCode::SYNTAX_ERROR;
 		}
 		advance();
 
 		if (isAtEnd()) {
-			throw std::runtime_error("Unexpected end or input");
+			setErrorData(StatusCode::SYNTAX_ERROR, "Unexpected end or input");
+			return StatusCode::SYNTAX_ERROR;
 		}
 		
 		//3. 우항
-		rightExpr = parsePrimary();
+		parsePrimary(rightExpr);
 
-		
 		// TODO AND 여부 검사
 		//if (check(TokenType::AND)) {
 
@@ -227,30 +218,39 @@ ExprPtr Parser::parseExpression(){
 		std::move(leftExpr), // ! 유니크포인터 객체는 반드시 std::move로
 		std::move(rightExpr)
 	);
-		
-	return exp;
+	
+	outExprPtr = std::move(exp);
+
+	return StatusCode::OK;
 }
 
 
-ExprPtr Parser::parsePrimary() {
+StatusCode Parser::parsePrimary(ExprPtr& outExprPtr) {
 
 	if (isAtEnd()) {
-		throw std::runtime_error("Unexpected end or input");
+		setErrorData(StatusCode::SYNTAX_ERROR, "Unexpected end or input");
+		return StatusCode::SYNTAX_ERROR;
 	}
 
 	QueryToken token = peek();
 	switch (token.type) {
 	case TokenType::IDENTIFIER:
 		advance();
-		return std::make_unique<ColumnExpression>(token.value);
+		outExprPtr = std::make_unique<ColumnExpression>(std::move(token.value));
+		return StatusCode::OK;
 	case TokenType::STRING:
 		advance();
-		return std::make_unique<LiteralExpression>(DataType::TEXT, token.value);
+		outExprPtr = std::make_unique<LiteralExpression>(DataType::TEXT, token.value);
+		return StatusCode::OK;
 	case TokenType::NUMBER:
 		advance();
-		return std::make_unique<LiteralExpression>(DataType::INT, std::stoi(token.value));
+		int intVal;
+		if (stringToInt(token.value, intVal) != StatusCode::OK) return StatusCode::SYNTAX_ERROR;
+		outExprPtr = std::make_unique<LiteralExpression>(DataType::INT, intVal);
+		return StatusCode::OK;
 	default:
-		throw std::runtime_error("Expected IDENTIFIER or LITERAL");
+		setErrorData(StatusCode::SYNTAX_ERROR, "Expected IDENTIFIER or LITERAL");
+		return StatusCode::SYNTAX_ERROR;
 	}
 
 	
