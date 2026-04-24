@@ -30,7 +30,7 @@ void StorageManager::createTableFile(
 	if (!catFile) return;
 
 	// 헤더 작성 : 
-	// 1) 컬럼 개수
+	// 컬럼 개수
 	int colCount = static_cast<int>(columns.size());
 	catFile.write(reinterpret_cast<char*>(&colCount), sizeof(int)); 
 	// reinterpret_cast<char*> : 타입캐스트 연산자. 포인터를 다른 포인터 형식으로 변환
@@ -44,7 +44,7 @@ void StorageManager::createTableFile(
 	// 무조건 char*을 받음.
 
 
-	// 2) 각 컬럼의 상세 정보 기록 - 이름, 타입
+	// 각 컬럼의 상세 정보 기록 
 	for (const Column& col : columns) {
 
 		// 컬럼 이름 길이 입력
@@ -63,8 +63,10 @@ void StorageManager::createTableFile(
 		catFile.write(reinterpret_cast<const char*>(&typeRaw), sizeof(int));
 
 	}
-	catFile.close();
 
+
+	
+	catFile.close();
 
 };
 
@@ -81,8 +83,10 @@ long StorageManager::appendRow(const std::string& tableName, const std::vector <
 	if (!dataFile.is_open()) return -1;
 
 	//offset 조회
-	int64_t offset = static_cast<long>(dataFile.tellp()); //tellp(). 쓰기 포인터 위치
-	// offset 물리적 바이트 위치. TODO long은 32비트. 64비트 int나 다른 자리수로 변경해야할 수 있음.
+	long offset = static_cast<long>(dataFile.tellp());
+	// offset 물리적 바이트 위치
+
+	std::cout << "id : " << rowData[0] << " | offset : " << offset << std::endl; 
 
 	//파일 입력
 	for (size_t i = 0; i < columns.size(); i++) {
@@ -91,18 +95,18 @@ long StorageManager::appendRow(const std::string& tableName, const std::vector <
 
 	dataFile.close();
 
-	//Row testRow = readRow(tableName, offset);
+	Row testRow = readRow(tableName, offset);
 
-	//for (Value col : testRow.values) {
-	//	std::cout << col << ", ";
-	//}
-	//std::cout << std::endl;
+	for (Value col : testRow.values) {
+		std::cout << col << ", ";
+	}
+	std::cout << std::endl;
 
 	return offset;
 };
 
 // 인덱스가 알려준 위치(offset)로 가서 데이터 한 줄을 읽어옴. -> TODO 나중에 페이징으로 바꾸기
-const Row StorageManager::readRow(const std::string& tableName, int64_t offset) {
+const Row StorageManager::readRow(const std::string& tableName, long offset) {
 
 	std::vector<Column> columns = getTableCatalog(tableName);
 
@@ -210,6 +214,8 @@ std::vector<Column> StorageManager::getTableCatalog(const std::string& tableName
 		col.setStrategy(); //컬럼 전략 세팅
 		columns.push_back(std::move(col));
 		
+
+		
 	}
 	
 	catFile.close();
@@ -225,54 +231,4 @@ fs::path StorageManager::getDataFilePath(const std::string& tableName) {
 	return dataPath;
 }
 
-// 인덱스 파일 생성
-bool StorageManager::createIdxFile(const std::string& tableName) {
-	fs::path idxFilePath = fs::path(DATA_DIR) / (tableName + ".idx");
-
-	std::ofstream idxFile(idxFilePath, std::ios::binary | std::ios::out);
-	if (!idxFile.is_open()) return false;
-	
-	idxFile.close();
-	return true;
-
-}
-
-// 인덱스 파일에 값 삽입
-bool StorageManager::appendIdx(const std::string& tableName, int key, int64_t offset) {
-
-	fs::path idxFilePath = fs::path(DATA_DIR) / (tableName + ".idx");
-
-	//ofstream
-	std::ofstream idxFile(idxFilePath, std::ios::binary | std::ios::app | std::ios::ate); // app : 이어쓰기
-	// std::ios::ate 옵션??
-	if (!idxFile.is_open()) return -1;
-
-	idxFile.write(reinterpret_cast<const char*> (&key), sizeof(int));
-	idxFile.write(reinterpret_cast<const char*> (&offset), sizeof(int64_t));
-
-}
-
-// 인덱스파일에서 트리객체로 인덱스 불러오기
-void StorageManager::getIdxToBtree(BPlusTree<int, int64_t>& btree, const std::string& tableName) {
-
-	fs::path idxFilePath = fs::path(DATA_DIR) / (tableName + ".idx");
-
-	std::ifstream idxFile(idxFilePath, std::ios::binary);
-	if (!idxFile.is_open()) return;
-
-	while (idxFile.peek() != EOF) { //현재 포인터가 가리키는 위치 데이터값이 EOF가 아닌 경우. = 끝이 아닌 경우
-		
-		int key; 
-		idxFile.read(reinterpret_cast<char*>(&key), sizeof(int));
-
-		int64_t offset;
-		idxFile.read(reinterpret_cast<char*>(&offset), sizeof(int64_t));
-		
-		btree.insert(key, offset);
-
-	}
-
-};
-
-
-
+//

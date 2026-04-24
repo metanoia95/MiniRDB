@@ -5,7 +5,6 @@
 #include <filesystem> // c++17이상 필요
 #include "Ast.h"
 #include "Table.h"
-#include "BTree.h"
 
 class StorageManager {
 
@@ -22,7 +21,7 @@ public:
 	long appendRow(const std::string& tableName, const std::vector <Value>& rowData);
 
 	// 인덱스가 알려준 위치(offset)로 가서 데이터 한 줄을 읽어옴.
-	const Row readRow(const std::string& tableName, int64_t offset);
+	const Row readRow(const std::string& tableName, long offset);
 
 	// 테이블 버퍼
 	Table getTable(const std::string& tableName);
@@ -40,13 +39,5 @@ private:
 	// 데이터 파일조회
 	std::filesystem::path getDataFilePath(const std::string& tableName);
 
-	// 인덱스 파일 생성
-	bool createIdxFile(const std::string& tableName);
-
-	// 인덱스에 값 추가
-	bool appendIdx(const std::string& tableName, int key, int64_t value);
-
-	// 인덱스파일에서 트리객체로 인덱스 불러오기
-	void getIdxToBtree(BPlusTree<int, int64_t>& btree, const std::string& tableName);
 
 }; 
