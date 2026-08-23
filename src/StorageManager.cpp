@@ -75,6 +75,12 @@ long StorageManager::appendRow(const std::string& tableName, const std::vector <
 	
 	std::vector<Column> columns = getTableCatalog(tableName);
 
+	//테이블이 존재하지 않으면 -1 반환
+	if (!fs::exists(dataPath)) {
+		return -1;
+	}
+
+
 	//ofstream
 	std::ofstream dataFile(dataPath, std::ios::binary | std::ios::app | std::ios::ate); // app : 이어쓰기
 	// std::ios::ate 옵션??
@@ -242,14 +248,19 @@ bool StorageManager::appendIdx(const std::string& tableName, int key, int64_t of
 
 	fs::path idxFilePath = fs::path(DATA_DIR) / (tableName + ".idx");
 
+	if (!fs::exists(idxFilePath)) {
+		return false;
+	}
+
 	//ofstream
 	std::ofstream idxFile(idxFilePath, std::ios::binary | std::ios::app | std::ios::ate); // app : 이어쓰기
 	// std::ios::ate 옵션??
-	if (!idxFile.is_open()) return -1;
+	if (!idxFile.is_open()) return false;
 
 	idxFile.write(reinterpret_cast<const char*> (&key), sizeof(int));
 	idxFile.write(reinterpret_cast<const char*> (&offset), sizeof(int64_t));
-
+	
+	return true;
 }
 
 // 인덱스파일에서 트리객체로 인덱스 불러오기
