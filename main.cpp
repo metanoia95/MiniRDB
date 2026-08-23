@@ -6,12 +6,14 @@
 
 int main()
 {
-    // DB 엔진
-    App app;
-    app.runQueryListTest(); // 자동 테스트 실행
     
-    app.runCliTest();
 
+#ifdef _DEBUG // 디버그 모드에서만 자동 테스트 실행
+    App app;
+    app.runQueryListTest(); // 쿼리 테스트 실행
+    app.runCliTest(); // CLI 테스트 실행
+#endif
+    
     //
     ServerSocket socket = ServerSocket("27015");
 
