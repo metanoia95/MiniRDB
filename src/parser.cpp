@@ -64,7 +64,7 @@ StatusCode Parser::createStatement(std::unique_ptr<Statement>& outStmt) {
 	// 0. 객체 선언
 	auto stmt = std::make_unique<CreateStatement>();
 
-	if(!consume(TokenType::TABLE, "Syntax error, expected TABLE")) 
+	if(!consume(TokenType::TABLE, "Syntax error, expected TABLE")) return StatusCode::SYNTAX_ERROR;
 
 	if(!consume(TokenType::IDENTIFIER, "Syntax error, expected IDENTIFIER")) return StatusCode::SYNTAX_ERROR;
 	stmt->table = previous().value;
